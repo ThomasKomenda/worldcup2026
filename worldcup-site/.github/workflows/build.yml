@@ -1,0 +1,55 @@
+# build.yml
+#
+# This file tells GitHub: "every 3 hours, run my data script and republish
+# the site." It IS a CI/CD pipeline — a tiny version of what your
+# engineering team runs on every commit.
+
+name: Build and deploy World Cup site
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"     # every 3 hours (UTC). Cron syntax: min hour day month weekday
+  push:
+    branches: [main]           # also rebuild whenever you push a code change
+  workflow_dispatch:           # ...and add a manual "Run workflow" button in the UI
+
+# GitHub Pages needs these permissions to receive a deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest     # GitHub spins up a fresh Linux machine for each run
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch match data
+        env:
+          # The secret is injected here as an environment variable.
+          # It never appears in the code or in the logs.
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+        run: python scripts/build_data.py
+
+      - name: Upload the site folder as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build               # deploy only runs if build succeeded
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
