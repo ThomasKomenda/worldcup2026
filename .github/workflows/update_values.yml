@@ -35,13 +35,13 @@ jobs:
         run: pip install duckdb
 
       - name: Extract market values
-        run: python scripts/extract_values.py
+        run: python worldcup-site/scripts/extract_values.py
 
       - name: Commit the updated values file
         run: |
           git config user.name "values-bot"
           git config user.email "actions@github.com"
-          git add site/data/values.json
+          git add worldcup-site/site/data/values.json
           # Only commit if something actually changed:
           git diff --cached --quiet || git commit -m "Update market values"
           git push
