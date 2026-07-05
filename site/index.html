@@ -37,6 +37,15 @@
     .daylabel { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
       letter-spacing: 0.12em; font-size: 0.75rem; color: var(--dim); margin: 24px 0 10px;
       padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+    /* team filter */
+    .filterbar { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; }
+    .filter-lbl { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
+      letter-spacing: 0.08em; font-size: 0.72rem; color: var(--dim); }
+    .team-select { font: inherit; font-size: 0.9rem; background: var(--panel); color: var(--chalk);
+      border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+    .team-select:focus-visible { outline: 2px solid var(--lime); }
+    .clear-filter { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; font-size: 0.72rem;
+      background: none; border: none; color: var(--lime); cursor: pointer; letter-spacing: 0.06em; }
     .match { display: grid; grid-template-columns: 62px 1fr auto; gap: 14px; align-items: center;
       width: 100%; text-align: left; font: inherit; color: inherit; background: var(--panel);
       border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; margin-bottom: 8px;
@@ -187,9 +196,10 @@
 let data = { upcoming: [], finished: [] };
 let squads = null, standings = null;
 let tab = "upcoming";
-let subRound = null;                 // which tournament sub-tab is active
+let subRound = null;
+let teamFilter = null;               // when set, show only this team's matches/path
 let openId = null;
-let openTeam = {}, openMode = {};   // per-match: which side, and pitch|list
+let openTeam = {}, openMode = {};
 let tick = null, poll = null;
 
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -318,10 +328,21 @@ function detail(m){
 }
 
 function renderMatches(){
-  const list = data[tab] || [];
+  let list = data[tab] || [];
+  if(teamFilter) list = list.filter(m => m.home===teamFilter || m.away===teamFilter);
   const el = document.getElementById("view");
-  if(!list.length){ el.innerHTML = "<p class='notice'>No matches in this window right now.</p>"; return; }
-  let html="", day="";
+
+  // team filter bar — built from all teams appearing in the data
+  const allTeams = [...new Set([...(data.upcoming||[]),...(data.finished||[])]
+    .flatMap(m=>[m.home,m.away]).filter(t=>t&&t!=="TBD"))].sort();
+  let filterBar = "<div class='filterbar'><span class='filter-lbl'>Team</span>" +
+    "<select class='team-select' onchange='setFilter(this.value)'>" +
+    "<option value=''>All teams</option>" +
+    allTeams.map(t=>"<option value='"+t+"' "+(t===teamFilter?"selected":"")+">"+flag(t)+" "+t+"</option>").join("") +
+    "</select>" + (teamFilter? "<button class='clear-filter' onclick=\"setFilter('')\">clear</button>":"") + "</div>";
+
+  if(!list.length){ el.innerHTML = filterBar + "<p class='notice'>No matches"+(teamFilter?" for "+teamFilter:"")+" in this window.</p>"; return; }
+  let html=filterBar, day="";
   for(const m of list){
     const ko = new Date(m.utcDate);
     const dl = dFmt.format(ko);
@@ -405,6 +426,7 @@ function renderTournament(){
   el.innerHTML = html;
 }
 function setRound(k){ subRound = k; render(); }
+function setFilter(t){ teamFilter = t || null; openId=null; render(); }
 
 function render(){ tab==="tournament"? renderTournament() : renderMatches(); }
 load();
