@@ -8,32 +8,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Archivo+Narrow:wght@700&display=swap" rel="stylesheet" />
   <style>
-    /* ---- Design tokens: "floodlit stadium at night" ------------------
-       Midnight navy field, electric lime accent (the color of a linesman's
-       flag / hi-vis kit), warm white text. Scoreboard numerals throughout. */
     :root {
-      --night: #0b1020;        /* deep stadium-night navy (page bg) */
-      --panel: #141b30;        /* raised panel */
-      --panel-2: #1c2740;      /* lighter panel */
-      --line: #2a3550;         /* hairline borders */
-      --chalk: #f2f5ff;        /* warm white text */
-      --dim: #8a97b8;          /* muted labels */
-      --lime: #c8ff3d;         /* signature accent — hi-vis */
-      --pitch-a: #1f7a43;      /* pitch stripe dark */
-      --pitch-b: #23884a;      /* pitch stripe light */
-      --live: #ff4d5e;
+      --night: #0b1020; --panel: #141b30; --panel-2: #1c2740; --line: #2a3550;
+      --chalk: #f2f5ff; --dim: #8a97b8; --lime: #c8ff3d;
+      --pitch-a: #1f7a43; --pitch-b: #23884a; --live: #ff4d5e;
     }
     * { box-sizing: border-box; margin: 0; }
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: var(--night); color: var(--chalk); line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-    }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--night); color: var(--chalk); line-height: 1.5; -webkit-font-smoothing: antialiased; }
     .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
-
-    /* ---- Header --------------------------------------------------------- */
-    header { border-bottom: 1px solid var(--line); background:
-      radial-gradient(120% 100% at 50% -20%, #16203a 0%, var(--night) 60%); }
+    header { border-bottom: 1px solid var(--line);
+      background: radial-gradient(120% 100% at 50% -20%, #16203a 0%, var(--night) 60%); }
     .head-inner { padding: 30px 20px 24px; max-width: 820px; margin: 0 auto; }
     .kicker { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
       letter-spacing: 0.25em; font-size: 0.72rem; color: var(--lime); font-weight: 700; }
@@ -42,121 +27,114 @@
     h1 .yr { color: var(--lime); }
     .tz { margin-top: 12px; font-size: 0.8rem; color: var(--dim); }
     .tz b { color: var(--chalk); font-weight: 600; }
-
-    /* ---- Tabs ----------------------------------------------------------- */
     nav { display: flex; gap: 6px; margin: 22px 0 6px; flex-wrap: wrap; }
-    .tab { font-family: "Archivo Narrow", sans-serif; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.85rem;
-      padding: 9px 16px; border: 1px solid var(--line); border-radius: 4px;
-      background: var(--panel); color: var(--dim); cursor: pointer; }
-    .tab[aria-selected="true"] { background: var(--lime); color: #0b1020;
-      border-color: var(--lime); }
+    .tab { font-family: "Archivo Narrow", sans-serif; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; font-size: 0.85rem; padding: 9px 16px; border: 1px solid var(--line);
+      border-radius: 4px; background: var(--panel); color: var(--dim); cursor: pointer; }
+    .tab[aria-selected="true"] { background: var(--lime); color: #0b1020; border-color: var(--lime); }
     .tab:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
-
     main { padding: 8px 0 80px; }
-
     .daylabel { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
-      letter-spacing: 0.12em; font-size: 0.75rem; color: var(--dim);
-      margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
-
-    /* ---- Match row ------------------------------------------------------ */
-    .match { display: grid; grid-template-columns: 62px 1fr auto; gap: 14px;
-      align-items: center; width: 100%; text-align: left; font: inherit;
-      color: inherit; background: var(--panel); border: 1px solid var(--line);
-      border-radius: 8px; padding: 13px 15px; margin-bottom: 8px; cursor: pointer;
-      transition: border-color .15s, transform .15s; }
+      letter-spacing: 0.12em; font-size: 0.75rem; color: var(--dim); margin: 24px 0 10px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+    .match { display: grid; grid-template-columns: 62px 1fr auto; gap: 14px; align-items: center;
+      width: 100%; text-align: left; font: inherit; color: inherit; background: var(--panel);
+      border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; margin-bottom: 8px;
+      cursor: pointer; transition: border-color .15s, transform .15s; }
     .match:hover { border-color: var(--lime); transform: translateX(2px); }
     .match:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
     .clock { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 1.35rem;
       font-variant-numeric: tabular-nums; text-align: center; letter-spacing: -0.02em; }
-    .clock small { display: block; font-family: "Archivo Narrow", sans-serif;
-      font-size: 0.58rem; letter-spacing: 0.1em; color: var(--dim); font-weight: 700;
-      margin-top: 2px; }
+    .clock small { display: block; font-family: "Archivo Narrow", sans-serif; font-size: 0.58rem;
+      letter-spacing: 0.1em; color: var(--dim); font-weight: 700; margin-top: 2px; }
     .fixture { font-size: 1.05rem; font-weight: 600; }
     .fixture .vs { color: var(--dim); font-weight: 400; padding: 0 6px; }
-    .score { font-family: "Archivo", sans-serif; font-weight: 900;
-      font-variant-numeric: tabular-nums; color: var(--lime); padding: 0 8px; }
-    .sub { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
-      letter-spacing: 0.06em; font-size: 0.72rem; color: var(--dim); margin-top: 3px; }
+    .score { font-family: "Archivo", sans-serif; font-weight: 900; font-variant-numeric: tabular-nums;
+      color: var(--lime); padding: 0 8px; }
+    .sub { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+      font-size: 0.72rem; color: var(--dim); margin-top: 3px; }
     .cd { color: var(--lime); font-variant-numeric: tabular-nums; }
     .livewrap { display: inline-flex; align-items: center; gap: 5px; color: var(--live);
-      font-family: "Archivo Narrow", sans-serif; font-weight: 700; font-size: 0.72rem;
-      letter-spacing: 0.08em; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live);
-      animation: pulse 1.3s infinite; }
+      font-family: "Archivo Narrow", sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.08em; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: pulse 1.3s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
     @media (prefers-reduced-motion: reduce){ .dot{animation:none} }
     .chev { color: var(--dim); font-size: 1.2rem; }
 
-    /* ---- Detail: the PITCH VIEW (signature element) -------------------- */
-    .detail { background: var(--panel); border: 1px solid var(--lime);
-      border-radius: 8px; margin: -2px 0 10px; overflow: hidden; }
+    .detail { background: var(--panel); border: 1px solid var(--lime); border-radius: 8px;
+      margin: -2px 0 10px; overflow: hidden; }
     .detail-head { display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 16px; border-bottom: 1px solid var(--line); }
-    .detail-head .venue { font-family: "Archivo Narrow", sans-serif;
-      text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; color: var(--dim); }
-    .teamtabs { display: flex; gap: 6px; }
-    .teamtab { font-family: "Archivo Narrow", sans-serif; font-weight: 700; font-size: 0.8rem;
+      padding: 12px 16px; border-bottom: 1px solid var(--line); gap: 10px; flex-wrap: wrap; }
+    .detail-head .venue { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
+      letter-spacing: 0.08em; font-size: 0.75rem; color: var(--dim); }
+    .switchrow { display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px 0; gap: 10px; flex-wrap: wrap; }
+    .teamtabs, .viewtabs { display: flex; gap: 6px; }
+    .teamtab, .viewtab { font-family: "Archivo Narrow", sans-serif; font-weight: 700; font-size: 0.8rem;
       text-transform: uppercase; padding: 5px 12px; border-radius: 4px; cursor: pointer;
       border: 1px solid var(--line); background: var(--panel-2); color: var(--dim); }
-    .teamtab[aria-selected="true"] { background: var(--lime); color: #0b1020; border-color: var(--lime); }
+    .teamtab[aria-selected="true"], .viewtab[aria-selected="true"] { background: var(--lime); color: #0b1020; border-color: var(--lime); }
+    .pitch-note { padding: 8px 16px 0; font-family: "Archivo Narrow", sans-serif; font-size: 0.72rem;
+      letter-spacing: 0.04em; color: var(--dim); text-transform: uppercase; }
 
-    .pitch-note { padding: 10px 16px 0; font-family: "Archivo Narrow", sans-serif;
-      font-size: 0.72rem; letter-spacing: 0.04em; color: var(--dim); text-transform: uppercase; }
-
-    /* the pitch itself: striped green, with position lines */
     .pitch { position: relative; margin: 12px 16px 16px; border-radius: 10px;
       background: repeating-linear-gradient(180deg, var(--pitch-a) 0 44px, var(--pitch-b) 44px 88px);
-      border: 2px solid rgba(255,255,255,0.18); aspect-ratio: 3 / 4;
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding: 18px 8px; overflow: hidden; }
-    /* pitch markings */
-    .pitch::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0;
-      width: 0; } /* reserved */
-    .pitch::after { content: ""; position: absolute; left: 15%; right: 15%; top: -1px;
-      height: 46px; border: 2px solid rgba(255,255,255,0.18); border-top: none;
-      border-radius: 0 0 8px 8px; }
+      border: 2px solid rgba(255,255,255,0.18); aspect-ratio: 3 / 4; display: flex; flex-direction: column;
+      justify-content: space-between; padding: 18px 6px; overflow: hidden; }
     .center-circle { position: absolute; left: 50%; top: 50%; width: 90px; height: 90px;
-      transform: translate(-50%,-50%); border: 2px solid rgba(255,255,255,0.15);
-      border-radius: 50%; }
-    .halfway { position: absolute; left: 0; right: 0; top: 50%; height: 2px;
-      background: rgba(255,255,255,0.15); }
+      transform: translate(-50%,-50%); border: 2px solid rgba(255,255,255,0.15); border-radius: 50%; }
+    .halfway { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,0.15); }
+    .line { display: flex; justify-content: space-around; align-items: flex-start; position: relative; z-index: 2; }
+    .pl { width: 72px; text-align: center; }
+    .badge { width: 42px; height: 42px; margin: 0 auto 4px; border-radius: 50%; background: var(--night);
+      border: 2px solid var(--lime); display: flex; align-items: center; justify-content: center;
+      font-family: "Archivo", sans-serif; font-weight: 800; font-size: 0.9rem; color: var(--lime); }
+    .pl .nm { font-size: 0.64rem; font-weight: 600; line-height: 1.2; }
+    .pl .val { font-family: "Archivo Narrow", sans-serif; font-size: 0.62rem; color: var(--lime); font-variant-numeric: tabular-nums; }
+    .pl .club { font-family: "Archivo Narrow", sans-serif; font-size: 0.58rem; color: rgba(242,245,255,0.6); line-height: 1.15; }
 
-    .line { display: flex; justify-content: space-around; align-items: center;
-      position: relative; z-index: 2; }
-    .pl { width: 62px; text-align: center; }
-    .badge { width: 42px; height: 42px; margin: 0 auto 4px; border-radius: 50%;
-      background: var(--night); border: 2px solid var(--lime); display: flex;
-      align-items: center; justify-content: center; font-family: "Archivo", sans-serif;
-      font-weight: 800; font-size: 0.95rem; color: var(--lime); position: relative; }
-    .badge .num { font-variant-numeric: tabular-nums; }
-    .pl .nm { font-size: 0.66rem; font-weight: 600; line-height: 1.15;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .pl .val { font-family: "Archivo Narrow", sans-serif; font-size: 0.62rem;
-      color: var(--lime); font-variant-numeric: tabular-nums; }
-    .pl .club { font-family: "Archivo Narrow", sans-serif; font-size: 0.58rem;
-      color: rgba(242,245,255,0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* list view table */
+    .plist { margin: 4px 4px 8px; }
+    .plist table { width: 100%; border-collapse: collapse; }
+    .plist th { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; font-size: 0.68rem;
+      letter-spacing: 0.05em; color: var(--dim); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .plist th.r, .plist td.r { text-align: right; }
+    .plist td { padding: 8px 10px; font-size: 0.85rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .plist tr:last-child td { border-bottom: none; }
+    .plist .p-nm { font-weight: 600; }
+    .plist .p-pos { font-family: "Archivo Narrow", sans-serif; font-size: 0.68rem; text-transform: uppercase;
+      color: var(--dim); letter-spacing: 0.04em; }
+    .plist .p-club { color: var(--dim); font-size: 0.8rem; }
+    .plist .p-val { font-family: "Archivo", sans-serif; font-weight: 800; color: var(--lime);
+      font-variant-numeric: tabular-nums; white-space: nowrap; }
 
     .squadmeta { padding: 0 16px 16px; display: flex; justify-content: space-between;
       font-family: "Archivo Narrow", sans-serif; font-size: 0.75rem; color: var(--dim);
       text-transform: uppercase; letter-spacing: 0.05em; }
     .squadmeta b { color: var(--lime); }
 
-    /* ---- Standings ------------------------------------------------------ */
-    .grp { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-      padding: 12px 14px; margin-bottom: 10px; }
-    .grp h3 { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
-      letter-spacing: 0.08em; font-size: 0.85rem; color: var(--lime); margin-bottom: 8px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th, td { padding: 5px 6px; text-align: right; }
-    th:first-child, td:first-child { text-align: left; }
-    thead th { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
-      font-size: 0.68rem; letter-spacing: 0.05em; color: var(--dim);
-      border-bottom: 1px solid var(--line); font-weight: 700; }
-    tbody tr:not(:last-child) td { border-bottom: 1px solid var(--line); }
+    .section-label { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 1.1rem;
+      text-transform: uppercase; letter-spacing: 0.02em; margin: 26px 0 12px; color: var(--chalk); }
+    .section-label:first-child { margin-top: 8px; }
+    .grp { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+    .grp h3 { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; letter-spacing: 0.08em;
+      font-size: 0.85rem; color: var(--lime); margin-bottom: 8px; }
+    table.st { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    table.st th, table.st td { padding: 5px 6px; text-align: right; }
+    table.st th:first-child, table.st td:first-child { text-align: left; }
+    table.st thead th { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; font-size: 0.68rem;
+      letter-spacing: 0.05em; color: var(--dim); border-bottom: 1px solid var(--line); font-weight: 700; }
+    table.st tbody tr:not(:last-child) td { border-bottom: 1px solid var(--line); }
     td.pts { font-family: "Archivo", sans-serif; font-weight: 800; color: var(--chalk); }
     .qual td:first-child { color: var(--lime); font-weight: 700; }
     .qual td:first-child::before { content: "▸ "; color: var(--lime); }
+
+    /* knockout match row (compact) */
+    .ko { display: flex; justify-content: space-between; align-items: center; background: var(--panel);
+      border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 6px; }
+    .ko .teams { font-weight: 600; font-size: 0.95rem; }
+    .ko .rs { font-family: "Archivo", sans-serif; font-weight: 900; color: var(--lime); font-variant-numeric: tabular-nums; }
+    .ko .dt { font-family: "Archivo Narrow", sans-serif; font-size: 0.72rem; color: var(--dim); text-transform: uppercase; }
 
     .notice { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--lime);
       border-radius: 6px; padding: 12px 15px; font-size: 0.9rem; color: var(--dim); margin-top: 16px; }
@@ -173,47 +151,54 @@
     <div class="tz" id="tz">Kickoff times shown in your local time</div>
   </div>
 </header>
-
 <div class="wrap">
   <div id="notice-slot"></div>
   <nav role="tablist" aria-label="Views">
     <button class="tab" role="tab" id="tab-upcoming" aria-selected="true" onclick="show('upcoming')">Upcoming</button>
     <button class="tab" role="tab" id="tab-finished" aria-selected="false" onclick="show('finished')">Results</button>
-    <button class="tab" role="tab" id="tab-standings" aria-selected="false" onclick="show('standings')">Groups</button>
+    <button class="tab" role="tab" id="tab-tournament" aria-selected="false" onclick="show('tournament')">Tournament</button>
   </nav>
   <main id="view"></main>
 </div>
-
 <footer>Data · football-data.org &amp; transfermarkt-datasets · rebuilt every few hours</footer>
 
 <script>
-// ---- state ----
 let data = { upcoming: [], finished: [] };
 let squads = null, standings = null;
 let tab = "upcoming";
 let openId = null;
-let openTeam = {};           // which side's pitch is shown per match
+let openTeam = {}, openMode = {};   // per-match: which side, and pitch|list
 let tick = null, poll = null;
 
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 document.getElementById("tz").innerHTML = "Kickoff times in your local time · <b>" + tz + "</b>";
 const tFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
 const dFmt = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric" });
+const dShort = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
 function money(v){ if(v==null) return "—"; if(v>=1e6) return "€"+(v/1e6).toFixed(v>=10e6?0:1)+"M"; return "€"+Math.round(v/1e3)+"K"; }
 function cd(utc){ const d=new Date(utc)-new Date(); if(d<=0) return null;
   const h=Math.floor(d/3.6e6),m=Math.floor(d%3.6e6/6e4),s=Math.floor(d%6e4/1e3);
   return h>0 ? h+"h "+String(m).padStart(2,"0")+"m" : m+"m "+String(s).padStart(2,"0")+"s"; }
+function initials(n){ const p=(n||"").trim().split(" ").filter(Boolean);
+  return p.length>1 ? (p[0][0]+p[p.length-1][0]).toUpperCase() : (p[0]||"?").slice(0,2).toUpperCase(); }
 
-// Map football-data position -> pitch line. Squad view = top players by value
-// arranged into a plausible shape (not a confirmed XI — labelled as such).
-function lineOf(pos){
-  const p = (pos||"").toLowerCase();
+// Human-readable stage names
+const STAGE_NAMES = {
+  "GROUP_STAGE":"Groups", "LAST_32":"Last 32", "ROUND_OF_32":"Last 32",
+  "ROUND_OF_16":"Last 16", "LAST_16":"Last 16", "QUARTER_FINALS":"Quarter-finals",
+  "QUARTER_FINAL":"Quarter-finals", "SEMI_FINALS":"Semi-finals", "SEMI_FINAL":"Semi-finals",
+  "THIRD_PLACE":"Third place", "FINAL":"Final"
+};
+const STAGE_ORDER = ["ROUND_OF_32","LAST_32","ROUND_OF_16","LAST_16","QUARTER_FINALS","SEMI_FINALS","THIRD_PLACE","FINAL"];
+function stageName(s){ return STAGE_NAMES[s] || (s? s.replaceAll("_"," ").toLowerCase() : ""); }
+
+function lineOf(pos){ const p=(pos||"").toLowerCase();
   if(p.includes("goal")) return 0;
-  if(p.includes("def") || p.includes("back")) return 1;
+  if(p.includes("def")||p.includes("back")) return 1;
   if(p.includes("mid")) return 2;
-  return 3; // offence / attack / forward / winger
-}
+  return 3; }
+const LINE_LABELS = ["Goalkeeper","Defence","Midfield","Attack"];
 
 async function load(){
   try { data = await (await fetch("data/matches.json?t="+Date.now())).json(); }
@@ -225,70 +210,63 @@ async function load(){
     "<p class='notice'>Showing sample data. Run the build to load real fixtures.</p>";
   render(); timers();
 }
-
 function timers(){
   if(tick) clearInterval(tick);
   tick = setInterval(()=>document.querySelectorAll("[data-cd]").forEach(el=>{
-    const t=cd(el.getAttribute("data-cd")); el.textContent = t? t : "kickoff";
-  }),1000);
+    const t=cd(el.getAttribute("data-cd")); el.textContent = t? t : "kickoff"; }),1000);
   if(poll) clearInterval(poll);
-  poll = setInterval(async()=>{ // refresh only when something's live
-    if((data.upcoming||[]).some(m=>m.status==="IN_PLAY"||m.status==="PAUSED")){
-      try{ data=await (await fetch("data/matches.json?t="+Date.now())).json(); render(); }catch(e){}
-    }
-  },60000);
+  poll = setInterval(async()=>{ if((data.upcoming||[]).some(m=>m.status==="IN_PLAY"||m.status==="PAUSED")){
+    try{ data=await (await fetch("data/matches.json?t="+Date.now())).json(); render(); }catch(e){} } },60000);
 }
-
 function show(t){ tab=t; openId=null;
-  ["upcoming","finished","standings"].forEach(x=>
-    document.getElementById("tab-"+x).setAttribute("aria-selected", x===t));
-  render();
-}
+  ["upcoming","finished","tournament"].forEach(x=> document.getElementById("tab-"+x).setAttribute("aria-selected", x===t));
+  render(); }
 function toggle(id){ openId = openId===id? null : id; render(); }
 function pickTeam(id, side){ openTeam[id]=side; render(); }
+function pickMode(id, mode){ openMode[id]=mode; render(); }
 
-// ---- pitch view ----
-function pitch(teamName, matchId){
-  const sq = squads && squads[teamName];
-  if(!sq) return "<div class='pitch-note'>Squad data appears after the next build.</div>";
-
-  // take top ~16 by value, then fill lines: 1 GK, then best of each line
-  const byLine = [[],[],[],[]];
+function pitchView(sq){
+  const byLine=[[],[],[],[]];
   for(const p of sq.players) byLine[lineOf(p.position)].push(p);
-  // choose a shape from what's available: GK 1, DEF up to 4, MID up to 4, FWD up to 3
-  const pick = [ byLine[0].slice(0,1), byLine[1].slice(0,4), byLine[2].slice(0,4), byLine[3].slice(0,3) ];
-
-  const total = sq.players.reduce((s,p)=>s+(p.value_eur||0),0);
-  const lineHtml = pick.map(line => "<div class='line'>" + line.map(p =>
-    "<div class='pl'>" +
-      "<div class='badge'><span class='num'>"+initials(p.name)+"</span></div>" +
-      "<div class='nm'>"+lastName(p.name)+"</div>" +
-      "<div class='val'>"+money(p.value_eur)+"</div>" +
-      (p.club? "<div class='club'>"+p.club+"</div>":"") +
-    "</div>").join("") + "</div>").join("");
-
-  return "<div class='pitch'><div class='halfway'></div><div class='center-circle'></div>" + lineHtml + "</div>" +
-    "<div class='squadmeta'><span>Squad value <b>"+money(total)+"</b></span>" +
-    "<span>"+sq.matched+"/"+sq.squadSize+" valued</span></div>";
+  const pick=[ byLine[0].slice(0,1), byLine[1].slice(0,4), byLine[2].slice(0,4), byLine[3].slice(0,3) ];
+  const lines = pick.map(line => "<div class='line'>" + line.map(p =>
+    "<div class='pl'><div class='badge'>"+initials(p.name)+"</div>" +
+    "<div class='nm'>"+p.name+"</div><div class='val'>"+money(p.value_eur)+"</div>" +
+    (p.club? "<div class='club'>"+p.club+"</div>":"") + "</div>").join("") + "</div>").join("");
+  return "<div class='pitch'><div class='halfway'></div><div class='center-circle'></div>"+lines+"</div>";
 }
-function initials(n){ const p=(n||"").trim().split(" ").filter(Boolean);
-  return p.length>1 ? (p[0][0]+p[p.length-1][0]).toUpperCase() : (p[0]||"?").slice(0,2).toUpperCase(); }
-function lastName(n){ const parts=(n||"").split(" "); return parts[parts.length-1]; }
-
+function listView(sq){
+  // full squad, grouped by line, full names + full club names (no truncation)
+  const rows = sq.players.map(p =>
+    "<tr><td><div class='p-nm'>"+p.name+"</div><div class='p-pos'>"+(p.position||"")+"</div></td>" +
+    "<td class='p-club'>"+(p.club||"—")+"</td>" +
+    "<td class='r p-val'>"+money(p.value_eur)+"</td></tr>").join("");
+  return "<div class='plist'><table><thead><tr><th>Player</th><th>Club</th><th class='r'>Value</th></tr></thead>" +
+    "<tbody>"+rows+"</tbody></table></div>";
+}
 function detail(m){
   const side = openTeam[m.id] || "home";
+  const mode = openMode[m.id] || "pitch";
   const teamName = side==="home"? m.home : m.away;
+  const sq = squads && squads[teamName];
+  const body = !sq ? "<div class='pitch-note'>Squad data appears after the next build.</div>"
+    : (mode==="pitch" ? pitchView(sq) : listView(sq)) +
+      "<div class='squadmeta'><span>Squad value <b>"+money(sq.players.reduce((s,p)=>s+(p.value_eur||0),0))+"</b></span>" +
+      "<span>"+sq.matched+"/"+sq.squadSize+" valued</span></div>";
   return "<div class='detail'>" +
     "<div class='detail-head'>" +
       "<div class='teamtabs'>" +
         "<button class='teamtab' aria-selected='"+(side==='home')+"' onclick=\"pickTeam("+m.id+",'home')\">"+m.home+"</button>" +
         "<button class='teamtab' aria-selected='"+(side==='away')+"' onclick=\"pickTeam("+m.id+",'away')\">"+m.away+"</button>" +
-      "</div>" +
-      "<div class='venue'>"+(m.venue||"")+"</div>" +
+      "</div><div class='venue'>"+(m.venue||"")+"</div>" +
     "</div>" +
-    "<div class='pitch-note'>Most valuable squad players by position — not a confirmed lineup</div>" +
-    pitch(teamName, m.id) +
-  "</div>";
+    "<div class='switchrow'>" +
+      "<div class='pitch-note' style='padding:0'>Most valuable squad players — not a confirmed lineup</div>" +
+      "<div class='viewtabs'>" +
+        "<button class='viewtab' aria-selected='"+(mode==='pitch')+"' onclick=\"pickMode("+m.id+",'pitch')\">Pitch</button>" +
+        "<button class='viewtab' aria-selected='"+(mode==='list')+"' onclick=\"pickMode("+m.id+",'list')\">List</button>" +
+      "</div>" +
+    "</div>" + body + "</div>";
 }
 
 function renderMatches(){
@@ -305,7 +283,7 @@ function renderMatches(){
     if(live) mid = m.home+" <span class='score'>"+(m.homeScore??0)+"–"+(m.awayScore??0)+"</span> "+m.away+" <span class='livewrap'><span class='dot'></span>LIVE</span>";
     else if(tab==="finished") mid = m.home+" <span class='score'>"+m.homeScore+"–"+m.awayScore+"</span> "+m.away;
     else mid = m.home+" <span class='vs'>v</span> "+m.away;
-    let sub = (m.stage? m.stage.replaceAll("_"," ").toLowerCase() : "");
+    let sub = stageName(m.stage);
     if(tab==="upcoming" && !live){ const t=cd(m.utcDate); if(t) sub += " · <span class='cd' data-cd='"+m.utcDate+"'>"+t+"</span>"; }
     const label = tab==="finished"? "FT" : (live? "LIVE" : "KO");
     html += "<button class='match' onclick='toggle("+m.id+")'>" +
@@ -317,22 +295,46 @@ function renderMatches(){
   el.innerHTML = html;
 }
 
-function renderStandings(){
+// Tournament tab: group tables first, then knockout rounds by stage
+function renderTournament(){
   const el = document.getElementById("view");
-  if(!standings || !standings.length){ el.innerHTML =
-    "<p class='notice'>Group tables appear once the build runs, or aren't published for the current stage.</p>"; return; }
-  let html="";
-  for(const g of standings){
-    const rows = g.table||[];
-    html += "<div class='grp'><h3>"+(g.group? g.group.replaceAll("_"," "):"Table")+"</h3>" +
-      "<table><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>" +
-      rows.map((r,i)=>"<tr class='"+(i<2?"qual":"")+"'><td>"+r.team.name+"</td><td>"+r.playedGames+"</td><td>"+r.won+"</td><td>"+r.draw+"</td><td>"+r.lost+"</td><td>"+r.goalDifference+"</td><td class='pts'>"+r.points+"</td></tr>").join("") +
-      "</tbody></table></div>";
+  let html = "";
+
+  // 1) Group tables
+  if(standings && standings.length){
+    html += "<div class='section-label'>Groups</div>";
+    for(const g of standings){
+      const rows = g.table||[];
+      html += "<div class='grp'><h3>"+(g.group? g.group.replaceAll("_"," "):"Table")+"</h3>" +
+        "<table class='st'><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>" +
+        rows.map((r,i)=>"<tr class='"+(i<2?"qual":"")+"'><td>"+r.team.name+"</td><td>"+r.playedGames+"</td><td>"+r.won+"</td><td>"+r.draw+"</td><td>"+r.lost+"</td><td>"+r.goalDifference+"</td><td class='pts'>"+r.points+"</td></tr>").join("") +
+        "</tbody></table></div>";
+    }
   }
+
+  // 2) Knockout rounds — gather all matches (finished + upcoming) grouped by stage
+  const all = [...(data.finished||[]), ...(data.upcoming||[])];
+  const byStage = {};
+  for(const m of all){
+    if(!m.stage || m.stage==="GROUP_STAGE") continue;
+    (byStage[m.stage] = byStage[m.stage] || []).push(m);
+  }
+  const stages = Object.keys(byStage).sort((a,b)=> STAGE_ORDER.indexOf(a)-STAGE_ORDER.indexOf(b));
+  for(const s of stages){
+    html += "<div class='section-label'>"+stageName(s)+"</div>";
+    const ms = byStage[s].sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
+    for(const m of ms){
+      const done = m.status==="FINISHED";
+      const result = done ? "<span class='rs'>"+m.homeScore+"–"+m.awayScore+"</span>" : "<span class='dt'>"+dShort.format(new Date(m.utcDate))+" "+tFmt.format(new Date(m.utcDate))+"</span>";
+      html += "<div class='ko'><span class='teams'>"+m.home+" v "+m.away+"</span>"+result+"</div>";
+    }
+  }
+
+  if(!html) html = "<p class='notice'>Group tables and knockout fixtures appear once the build runs.</p>";
   el.innerHTML = html;
 }
 
-function render(){ tab==="standings"? renderStandings() : renderMatches(); }
+function render(){ tab==="tournament"? renderTournament() : renderMatches(); }
 load();
 </script>
 </body>
