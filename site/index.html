@@ -76,6 +76,12 @@
     .teamtab[aria-selected="true"], .viewtab[aria-selected="true"] { background: var(--lime); color: #0b1020; border-color: var(--lime); }
     .pitch-note { padding: 8px 16px 0; font-family: "Archivo Narrow", sans-serif; font-size: 0.72rem;
       letter-spacing: 0.04em; color: var(--dim); text-transform: uppercase; }
+    /* squad value comparison bar */
+    .vbar-wrap { padding: 12px 16px 4px; }
+    .vbar-heads { display: flex; justify-content: space-between; font-family: "Archivo", sans-serif;
+      font-weight: 800; font-size: 0.85rem; color: var(--chalk); margin-bottom: 5px; font-variant-numeric: tabular-nums; }
+    .vbar { height: 8px; border-radius: 4px; background: var(--panel-2); overflow: hidden; display: flex; }
+    .vbar-h { height: 100%; background: var(--lime); }
 
     .pitch { position: relative; margin: 12px 16px 16px; border-radius: 10px;
       background: repeating-linear-gradient(180deg, var(--pitch-a) 0 44px, var(--pitch-b) 44px 88px);
@@ -129,9 +135,24 @@
     .qual td:first-child { color: var(--lime); font-weight: 700; }
     .qual td:first-child::before { content: "▸ "; color: var(--lime); }
 
+    /* tournament sub-tabs */
+    .subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 16px; }
+    .subtab { font-family: "Archivo Narrow", sans-serif; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; font-size: 0.78rem; padding: 7px 13px; border: 1px solid var(--line);
+      border-radius: 20px; background: var(--panel); color: var(--dim); cursor: pointer; }
+    .subtab[aria-selected="true"] { background: var(--panel-2); color: var(--lime); border-color: var(--lime); }
+    /* potential matchups */
+    .potential { margin-top: 16px; padding: 14px; background: var(--panel);
+      border: 1px dashed var(--line); border-radius: 8px; }
+    .pot-label { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+      font-size: 0.72rem; color: var(--dim); margin-bottom: 8px; }
+    .pot-chip { display: inline-block; font-size: 0.82rem; padding: 4px 10px; margin: 0 6px 6px 0;
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--chalk); }
+
     /* knockout match row (compact) */
     .ko { display: flex; justify-content: space-between; align-items: center; background: var(--panel);
       border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 6px; }
+    .ko .vs { color: var(--dim); font-weight: 400; padding: 0 4px; }
     .ko .teams { font-weight: 600; font-size: 0.95rem; }
     .ko .rs { font-family: "Archivo", sans-serif; font-weight: 900; color: var(--lime); font-variant-numeric: tabular-nums; }
     .ko .dt { font-family: "Archivo Narrow", sans-serif; font-size: 0.72rem; color: var(--dim); text-transform: uppercase; }
@@ -166,6 +187,7 @@
 let data = { upcoming: [], finished: [] };
 let squads = null, standings = null;
 let tab = "upcoming";
+let subRound = null;                 // which tournament sub-tab is active
 let openId = null;
 let openTeam = {}, openMode = {};   // per-match: which side, and pitch|list
 let tick = null, poll = null;
@@ -182,6 +204,21 @@ function cd(utc){ const d=new Date(utc)-new Date(); if(d<=0) return null;
   return h>0 ? h+"h "+String(m).padStart(2,"0")+"m" : m+"m "+String(s).padStart(2,"0")+"s"; }
 function initials(n){ const p=(n||"").trim().split(" ").filter(Boolean);
   return p.length>1 ? (p[0][0]+p[p.length-1][0]).toUpperCase() : (p[0]||"?").slice(0,2).toUpperCase(); }
+
+// Country name -> flag emoji (WC2026 nations). Falls back to a neutral flag,
+// never a broken image.
+const FLAGS = {
+  "Argentina":"🇦🇷","Australia":"🇦🇺","Austria":"🇦🇹","Belgium":"🇧🇪","Bosnia-Herzegovina":"🇧🇦",
+  "Brazil":"🇧🇷","Canada":"🇨🇦","Cape Verde":"🇨🇻","Colombia":"🇨🇴","Croatia":"🇭🇷",
+  "Czech Republic":"🇨🇿","Czechia":"🇨🇿","Democratic Republic of the Congo":"🇨🇩","Ecuador":"🇪🇨",
+  "Egypt":"🇪🇬","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","France":"🇫🇷","Germany":"🇩🇪","Ghana":"🇬🇭","Iran":"🇮🇷",
+  "Ivory Coast":"🇨🇮","Japan":"🇯🇵","Jordan":"🇯🇴","Mexico":"🇲🇽","Morocco":"🇲🇦",
+  "Netherlands":"🇳🇱","New Zealand":"🇳🇿","Norway":"🇳🇴","Panama":"🇵🇦","Paraguay":"🇵🇾",
+  "Portugal":"🇵🇹","Saudi Arabia":"🇸🇦","Senegal":"🇸🇳","South Africa":"🇿🇦","South Korea":"🇰🇷",
+  "Spain":"🇪🇸","Sweden":"🇸🇪","Switzerland":"🇨🇭","Tunisia":"🇹🇳","Uruguay":"🇺🇾",
+  "USA":"🇺🇸","United States":"🇺🇸","Uzbekistan":"🇺🇿"
+};
+function flag(name){ return FLAGS[name] || "🏳️"; }
 
 // Human-readable stage names
 const STAGE_NAMES = {
@@ -253,13 +290,24 @@ function detail(m){
     : (mode==="pitch" ? pitchView(sq) : listView(sq)) +
       "<div class='squadmeta'><span>Squad value <b>"+money(sq.players.reduce((s,p)=>s+(p.value_eur||0),0))+"</b></span>" +
       "<span>"+sq.matched+"/"+sq.squadSize+" valued</span></div>";
+  // squad-value comparison bar (both sides), when both squads are known
+  const hv = squads && squads[m.home] ? squads[m.home].players.reduce((s,p)=>s+(p.value_eur||0),0) : 0;
+  const av = squads && squads[m.away] ? squads[m.away].players.reduce((s,p)=>s+(p.value_eur||0),0) : 0;
+  let compare = "";
+  if(hv || av){
+    const tot = hv+av || 1, hpct = Math.round(hv/tot*100);
+    compare = "<div class='vbar-wrap'><div class='vbar-heads'>" +
+      "<span>"+flag(m.home)+" "+money(hv)+"</span><span>"+money(av)+" "+flag(m.away)+"</span></div>" +
+      "<div class='vbar'><div class='vbar-h' style='width:"+hpct+"%'></div></div></div>";
+  }
+
   return "<div class='detail'>" +
     "<div class='detail-head'>" +
       "<div class='teamtabs'>" +
-        "<button class='teamtab' aria-selected='"+(side==='home')+"' onclick=\"pickTeam("+m.id+",'home')\">"+m.home+"</button>" +
-        "<button class='teamtab' aria-selected='"+(side==='away')+"' onclick=\"pickTeam("+m.id+",'away')\">"+m.away+"</button>" +
+        "<button class='teamtab' aria-selected='"+(side==='home')+"' onclick=\"pickTeam("+m.id+",'home')\">"+flag(m.home)+" "+m.home+"</button>" +
+        "<button class='teamtab' aria-selected='"+(side==='away')+"' onclick=\"pickTeam("+m.id+",'away')\">"+flag(m.away)+" "+m.away+"</button>" +
       "</div><div class='venue'>"+(m.venue||"")+"</div>" +
-    "</div>" +
+    "</div>" + compare +
     "<div class='switchrow'>" +
       "<div class='pitch-note' style='padding:0'>Most valuable squad players — not a confirmed lineup</div>" +
       "<div class='viewtabs'>" +
@@ -279,10 +327,11 @@ function renderMatches(){
     const dl = dFmt.format(ko);
     if(dl!==day){ html += "<div class='daylabel'>"+dl+"</div>"; day=dl; }
     const live = m.status==="IN_PLAY"||m.status==="PAUSED";
+    const H = flag(m.home)+" "+m.home, A = m.away+" "+flag(m.away);
     let mid;
-    if(live) mid = m.home+" <span class='score'>"+(m.homeScore??0)+"–"+(m.awayScore??0)+"</span> "+m.away+" <span class='livewrap'><span class='dot'></span>LIVE</span>";
-    else if(tab==="finished") mid = m.home+" <span class='score'>"+m.homeScore+"–"+m.awayScore+"</span> "+m.away;
-    else mid = m.home+" <span class='vs'>v</span> "+m.away;
+    if(live) mid = H+" <span class='score'>"+(m.homeScore??0)+"–"+(m.awayScore??0)+"</span> "+A+" <span class='livewrap'><span class='dot'></span>LIVE</span>";
+    else if(tab==="finished") mid = H+" <span class='score'>"+m.homeScore+"–"+m.awayScore+"</span> "+A;
+    else mid = H+" <span class='vs'>v</span> "+A;
     let sub = stageName(m.stage);
     if(tab==="upcoming" && !live){ const t=cd(m.utcDate); if(t) sub += " · <span class='cd' data-cd='"+m.utcDate+"'>"+t+"</span>"; }
     const label = tab==="finished"? "FT" : (live? "LIVE" : "KO");
@@ -295,44 +344,67 @@ function renderMatches(){
   el.innerHTML = html;
 }
 
-// Tournament tab: group tables first, then knockout rounds by stage
+// Tournament tab with sub-tabs: Groups + each knockout round.
 function renderTournament(){
   const el = document.getElementById("view");
-  let html = "";
-
-  // 1) Group tables
-  if(standings && standings.length){
-    html += "<div class='section-label'>Groups</div>";
-    for(const g of standings){
-      const rows = g.table||[];
-      html += "<div class='grp'><h3>"+(g.group? g.group.replaceAll("_"," "):"Table")+"</h3>" +
-        "<table class='st'><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>" +
-        rows.map((r,i)=>"<tr class='"+(i<2?"qual":"")+"'><td>"+r.team.name+"</td><td>"+r.playedGames+"</td><td>"+r.won+"</td><td>"+r.draw+"</td><td>"+r.lost+"</td><td>"+r.goalDifference+"</td><td class='pts'>"+r.points+"</td></tr>").join("") +
-        "</tbody></table></div>";
-    }
-  }
-
-  // 2) Knockout rounds — gather all matches (finished + upcoming) grouped by stage
   const all = [...(data.finished||[]), ...(data.upcoming||[])];
+
+  // Which knockout stages exist in the data?
   const byStage = {};
   for(const m of all){
     if(!m.stage || m.stage==="GROUP_STAGE") continue;
     (byStage[m.stage] = byStage[m.stage] || []).push(m);
   }
-  const stages = Object.keys(byStage).sort((a,b)=> STAGE_ORDER.indexOf(a)-STAGE_ORDER.indexOf(b));
-  for(const s of stages){
-    html += "<div class='section-label'>"+stageName(s)+"</div>";
-    const ms = byStage[s].sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
+  const koStages = Object.keys(byStage).sort((a,b)=> STAGE_ORDER.indexOf(a)-STAGE_ORDER.indexOf(b));
+
+  // Build the sub-tab list: Groups first (if standings), then each KO round.
+  const subs = [];
+  if(standings && standings.length) subs.push({key:"groups", label:"Groups"});
+  for(const s of koStages) subs.push({key:s, label:stageName(s)});
+  if(!subs.length){ el.innerHTML = "<p class='notice'>Group tables and knockout fixtures appear once the build runs.</p>"; return; }
+
+  // Default sub-tab: the latest round that has matches, else Groups.
+  if(!subRound || !subs.find(s=>s.key===subRound)) subRound = subs[subs.length-1].key;
+
+  let html = "<div class='subtabs'>" + subs.map(s =>
+    "<button class='subtab' aria-selected='"+(s.key===subRound)+"' onclick=\"setRound('"+s.key+"')\">"+s.label+"</button>"
+  ).join("") + "</div>";
+
+  if(subRound==="groups"){
+    for(const g of standings){
+      const rows = g.table||[];
+      html += "<div class='grp'><h3>"+(g.group? g.group.replaceAll("_"," "):"Table")+"</h3>" +
+        "<table class='st'><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>" +
+        rows.map((r,i)=>"<tr class='"+(i<2?"qual":"")+"'><td>"+flag(r.team.name)+" "+r.team.name+"</td><td>"+r.playedGames+"</td><td>"+r.won+"</td><td>"+r.draw+"</td><td>"+r.lost+"</td><td>"+r.goalDifference+"</td><td class='pts'>"+r.points+"</td></tr>").join("") +
+        "</tbody></table></div>";
+    }
+  } else {
+    const ms = (byStage[subRound]||[]).sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
     for(const m of ms){
       const done = m.status==="FINISHED";
-      const result = done ? "<span class='rs'>"+m.homeScore+"–"+m.awayScore+"</span>" : "<span class='dt'>"+dShort.format(new Date(m.utcDate))+" "+tFmt.format(new Date(m.utcDate))+"</span>";
-      html += "<div class='ko'><span class='teams'>"+m.home+" v "+m.away+"</span>"+result+"</div>";
+      // Potential-matchup handling: football-data uses literal team names once
+      // known. If a side is a placeholder/blank, show TBD honestly.
+      const home = m.home && m.home!=="TBD" ? flag(m.home)+" "+m.home : "TBD";
+      const away = m.away && m.away!=="TBD" ? m.away+" "+flag(m.away) : "TBD";
+      const result = done
+        ? "<span class='rs'>"+m.homeScore+"–"+m.awayScore+"</span>"
+        : "<span class='dt'>"+dShort.format(new Date(m.utcDate))+" "+tFmt.format(new Date(m.utcDate))+"</span>";
+      html += "<div class='ko'><span class='teams'>"+home+" <span class='vs'>v</span> "+away+"</span>"+result+"</div>";
+    }
+    // Potential opponents note for the NEXT round, derived from THIS round's real fixtures.
+    const idx = STAGE_ORDER.indexOf(subRound);
+    const nextStage = STAGE_ORDER.slice(idx+1).find(s => STAGE_NAMES[s]);
+    if(nextStage && ms.length){
+      const contenders = ms.filter(m=>m.status!=="FINISHED").map(m=>m.home+"/"+m.away).filter(x=>!x.includes("TBD"));
+      if(contenders.length){
+        html += "<div class='potential'><div class='pot-label'>Possible "+stageName(nextStage)+" entrants from this round</div>" +
+          contenders.map(c=>"<span class='pot-chip'>"+c+"</span>").join("") + "</div>";
+      }
     }
   }
-
-  if(!html) html = "<p class='notice'>Group tables and knockout fixtures appear once the build runs.</p>";
   el.innerHTML = html;
 }
+function setRound(k){ subRound = k; render(); }
 
 function render(){ tab==="tournament"? renderTournament() : renderMatches(); }
 load();
