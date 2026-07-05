@@ -20,6 +20,15 @@ import unicodedata
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+# Load a local .env file if python-dotenv is installed (for local testing).
+# In GitHub Actions there's no .env and the package isn't installed — the key
+# comes from repository secrets — so we import defensively and move on.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 API_KEY = os.environ.get("FOOTBALL_DATA_API_KEY")
 COMPETITION = "WC"
 
@@ -139,6 +148,19 @@ def main() -> None:
             "finished": sorted(finished, key=lambda m: m["utcDate"], reverse=True),
         }, f, indent=2, ensure_ascii=False)
     print(f"matches.json: {len(upcoming)} upcoming, {len(finished)} finished")
+
+    # ---- standings (for the group tables / bracket) ----------------------
+    # One extra API call. Wrapped in try/except because during the knockout
+    # stage the standings endpoint can return differently than in groups —
+    # we'd rather skip this gracefully than fail the whole build.
+    try:
+        st = api_get(f"/competitions/{COMPETITION}/standings")
+        with open(os.path.join(DATA_DIR, "standings.json"), "w", encoding="utf-8") as f:
+            json.dump({"generatedAt": datetime.now(timezone.utc).isoformat(),
+                       "standings": st.get("standings", [])}, f, indent=2, ensure_ascii=False)
+        print(f"standings.json: {len(st.get('standings', []))} groups/tables")
+    except Exception as err:
+        print(f"standings skipped ({err}) — bracket will use match stages instead")
 
     # ---- squads ----------------------------------------------------------
     # Load the weekly market values, if the weekly workflow has produced them.

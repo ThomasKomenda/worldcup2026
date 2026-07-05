@@ -62,3 +62,50 @@ and a notice, so you can develop the frontend independently of the API.
 - Match detail view: squads, players' clubs, market values
 - Data source: transfermarkt-datasets DuckDB file → `site/data/players.json`
 - Host city / stadium enrichment
+
+## Phase 2: squads & market values (how it works)
+
+Two data rhythms, two workflows:
+
+- **Weekly** (`update_values.yml`): queries the transfermarkt-datasets
+  players table remotely with DuckDB SQL and commits `site/data/values.json`.
+  Run it manually once (Actions tab) so values exist immediately.
+- **Every 3 hours** (`build.yml`): fetches matches AND each team's squad
+  from football-data.org (politely, 7s between calls to respect the
+  10 req/min limit), joins market values onto players by normalized name
+  (accent-stripping + word-order-independent matching, nationality as a
+  tiebreaker), and writes `squads.json`.
+
+Clicking any match on the site opens the squad panel: players sorted by
+market value, their clubs, and each team's total squad value. Unmatched
+players show "—" — honest gaps beat wrong data.
+
+## Local development setup
+
+One-time:
+
+```bash
+# 1. install the local dependencies (just python-dotenv, plus duckdb for values)
+pip install -r requirements.txt
+
+# 2. create your .env from the template and add your key
+cp .env.example .env
+#    then edit .env and paste your football-data.org key
+```
+
+Then run any script — it loads .env automatically, no export needed:
+
+```bash
+python scripts/probe_events.py     # test: does the API return goal data?
+python scripts/build_data.py       # fetch matches + squads + join values
+```
+
+Preview the site locally:
+
+```bash
+cd site && python -m http.server   # then open http://localhost:8000
+```
+
+Note: `.env` is gitignored and never leaves your machine. In GitHub Actions,
+the key comes from repository secrets instead, and python-dotenv simply does
+nothing (there's no .env there) — the same scripts work in both places.

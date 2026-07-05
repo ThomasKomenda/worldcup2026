@@ -17,6 +17,15 @@ import sys
 
 import duckdb  # installed by the workflow: pip install duckdb
 
+# Load a local .env file if python-dotenv is installed (for local testing).
+# In GitHub Actions there's no .env and the package isn't installed — the key
+# comes from repository secrets — so we import defensively and move on.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # The transfermarkt-datasets project publishes each table as a public CSV.
 PLAYERS_CSV = "https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/players.csv.gz"
 

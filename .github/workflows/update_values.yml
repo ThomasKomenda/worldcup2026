@@ -1,23 +1,17 @@
-# update_values.yml — the SLOW data pipeline (weekly).
+# update_values.yml — the SLOW pipeline (weekly): extract player market
+# values from the transfermarkt-datasets project and commit values.json.
 #
-# Market values barely move during a tournament and the source dataset
-# refreshes weekly, so fetching them every 3 hours would be wasteful —
-# both for us and for the volunteer-run dataset we're borrowing from.
-# Being a polite consumer of free community resources is part of the craft.
-#
-# Unlike the build workflow (which publishes a site), this one COMMITS a
-# file back into the repository: site/data/values.json. The 3-hourly build
-# then finds it there and joins it onto the squads.
+# Layout A: root-relative paths, no prefix needed.
 
 name: Update market values (weekly)
 
 on:
   schedule:
     - cron: "0 6 * * 1"        # Mondays 06:00 UTC
-  workflow_dispatch:            # manual "Run workflow" button — use this once right away!
+  workflow_dispatch:            # manual button — run this once first!
 
 permissions:
-  contents: write               # this workflow needs permission to push a commit
+  contents: write               # needs to push a commit
 
 jobs:
   extract:
@@ -35,13 +29,12 @@ jobs:
         run: pip install duckdb
 
       - name: Extract market values
-        run: python worldcup-site/scripts/extract_values.py
+        run: python scripts/extract_values.py
 
       - name: Commit the updated values file
         run: |
           git config user.name "values-bot"
           git config user.email "actions@github.com"
-          git add worldcup-site/site/data/values.json
-          # Only commit if something actually changed:
+          git add site/data/values.json
           git diff --cached --quiet || git commit -m "Update market values"
           git push

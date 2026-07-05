@@ -1,0 +1,11 @@
+# Local development dependencies.
+# Install everything with:  pip install -r requirements.txt
+#
+# python-dotenv: loads your local .env file so scripts can read
+#   FOOTBALL_DATA_API_KEY without you exporting it each time.
+python-dotenv>=1.0
+#
+# duckdb: only needed if you run scripts/extract_values.py locally
+#   (the market-value extraction). The weekly GitHub Action installs it
+#   on its own, so this is just for local testing.
+duckdb>=1.0
