@@ -1,0 +1,20 @@
+{
+  "generatedAt":"2026-07-05T00:00:00+00:00",
+  "teams":{
+    "Argentina":{"crest":null,"matched":4,"squadSize":6,"players":[
+      {"name":"Emiliano Martinez","position":"Goalkeeper","club":"Aston Villa","value_eur":28000000},
+      {"name":"Cuti Romero","position":"Defence","club":"Tottenham","value_eur":50000000},
+      {"name":"Nicolas Otamendi","position":"Defence","club":"Benfica","value_eur":4000000},
+      {"name":"Enzo Fernandez","position":"Midfield","club":"Chelsea","value_eur":75000000},
+      {"name":"Alexis Mac Allister","position":"Midfield","club":"Liverpool","value_eur":70000000},
+      {"name":"Lionel Messi","position":"Offence","club":"Inter Miami","value_eur":30000000}
+    ]},
+    "Spain":{"crest":null,"matched":3,"squadSize":5,"players":[
+      {"name":"Unai Simon","position":"Goalkeeper","club":"Athletic","value_eur":30000000},
+      {"name":"Robin Le Normand","position":"Defence","club":"Atletico","value_eur":40000000},
+      {"name":"Rodri","position":"Midfield","club":"Man City","value_eur":110000000},
+      {"name":"Pedri","position":"Midfield","club":"Barcelona","value_eur":100000000},
+      {"name":"Lamine Yamal","position":"Offence","club":"Barcelona","value_eur":180000000}
+    ]}
+  }
+}

@@ -109,3 +109,21 @@ cd site && python -m http.server   # then open http://localhost:8000
 Note: `.env` is gitignored and never leaves your machine. In GitHub Actions,
 the key comes from repository secrets instead, and python-dotenv simply does
 nothing (there's no .env there) — the same scripts work in both places.
+
+## Pitch view & the lineup data story
+
+The match detail shows a **pitch view**: each team's most valuable squad players
+arranged by position line (GK / defence / midfield / attack), with market values
+and clubs. It's labelled "not a confirmed lineup" because it uses squad data, not
+the actual starting XI.
+
+Why not real starting XIs? We checked every free source:
+- football-data.org free tier: no lineup data (paid add-on only)
+- API-Football free tier: has lineups + grid positions, but current season is locked
+- TheSportsDB free tier: has 2026 matches but incomplete lineups (fragments)
+- transfermarkt-datasets: has 2026 fixtures but game_lineups table not yet populated
+
+**Upgrade paths** (if you want real starting XIs later):
+1. API-Football Pro (~$19/mo) — real lineups with grid coordinates for 2026.
+2. Watch transfermarkt-datasets — if its game_lineups table fills in for WC2026
+   (it may in a future weekly refresh), we can build a real-XI pitch view for free.

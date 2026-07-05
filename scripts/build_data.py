@@ -199,6 +199,7 @@ def main() -> None:
 
         players.sort(key=lambda x: x["value_eur"] or 0, reverse=True)
         squads[team_name] = {
+            "crest": team.get("crest"),          # national-team crest URL for the pitch view
             "players": players,
             "matched": matched,
             "squadSize": len(players),
