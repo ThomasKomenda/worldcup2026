@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Cup 2026 — Fixtures</title>
+
+  <!-- One display font gives the page its sporty poster feel. Everything else
+       is a system font: zero build tools, zero dependencies to manage. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700..900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ------------------------------------------------------------------
+       Design tokens: define colors and spacing once, reuse everywhere.
+       Engineers call this a "design system in miniature".
+       ------------------------------------------------------------------ */
+    :root {
+      --pitch: #0a5c36;        /* deep pitch green — the accent */
+      --pitch-dark: #063d24;
+      --ink: #14201a;          /* near-black text */
+      --paper: #f6f8f4;        /* very light green-tinted background */
+      --card: #ffffff;
+      --line: #d8e2d8;
+      --muted: #5c6b60;
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--pitch);
+      color: #fff;
+      padding: 28px 20px 22px;
+    }
+
+    .wrap { max-width: 760px; margin: 0 auto; }
+
+    h1 {
+      font-family: "Archivo", system-ui, sans-serif;
+      font-stretch: 125%;
+      font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+    }
+
+    /* The timezone chip is the signature detail: the whole point of the
+       site is "kickoff in YOUR time", so we say whose time we're showing. */
+    .tz-chip {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+
+    nav { display: flex; gap: 8px; margin: 20px 0 8px; }
+
+    .tab {
+      font: inherit;
+      padding: 8px 18px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      cursor: pointer;
+    }
+    .tab[aria-selected="true"] {
+      background: var(--pitch);
+      border-color: var(--pitch);
+      color: #fff;
+      font-weight: 600;
+    }
+    .tab:focus-visible { outline: 3px solid var(--pitch); outline-offset: 2px; }
+
+    main { padding: 0 20px 60px; }
+
+    .date-heading {
+      margin: 26px 0 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .match {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 16px;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    /* Kickoff time styled like a scoreboard cell: big, tabular digits. */
+    .kickoff {
+      font-family: "Archivo", system-ui, sans-serif;
+      font-stretch: 125%;
+      font-weight: 800;
+      font-size: 1.5rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--pitch-dark);
+      text-align: center;
+    }
+    .kickoff small { display: block; font-size: 0.65rem; color: var(--muted); font-weight: 600; }
+
+    .teams { font-size: 1.05rem; }
+    .teams .score { font-weight: 800; color: var(--pitch-dark); padding: 0 6px; }
+    .meta { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    .notice {
+      background: #fff7e0;
+      border: 1px solid #e8d48a;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-top: 18px;
+      font-size: 0.9rem;
+    }
+
+    footer { padding: 20px; text-align: center; font-size: 0.8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>World Cup 2026</h1>
+    <!-- Filled in by JavaScript with the visitor's own timezone -->
+    <span class="tz-chip" id="tz-chip">detecting your timezone…</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="sample-notice"></div>
+
+  <!-- Two tabs, plain buttons. aria-selected tells assistive tech (and our
+       CSS) which one is active. -->
+  <nav role="tablist" aria-label="Match lists">
+    <button class="tab" role="tab" id="tab-upcoming" aria-selected="true"  onclick="show('upcoming')">Upcoming</button>
+    <button class="tab" role="tab" id="tab-finished" aria-selected="false" onclick="show('finished')">Results</button>
+  </nav>
+
+  <section id="list"><!-- match cards get rendered here --></section>
+</main>
+
+<footer>
+  Data: football-data.org · rebuilt automatically every few hours
+</footer>
+
+<script>
+/* --------------------------------------------------------------------------
+   The frontend logic. Three jobs:
+   1. Load data/matches.json (produced by our build script).
+   2. Convert each UTC kickoff to the visitor's local time.  <-- the key trick
+   3. Render simple cards, grouped by day.
+   -------------------------------------------------------------------------- */
+
+let data = { upcoming: [], finished: [] };
+let currentTab = "upcoming";
+
+/* The browser knows the visitor's timezone. We never guess it server-side. */
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+document.getElementById("tz-chip").textContent = "Kickoff times in your local time · " + timeZone;
+
+/* Formatters: create once, reuse for every match (cheap and consistent). */
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
+const dayFmt  = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+async function load() {
+  try {
+    /* "?t=" + Date.now() is a tiny cache-buster so browsers don't show a
+       stale file after the scheduled rebuild. */
+    const res = await fetch("data/matches.json?t=" + Date.now());
+    data = await res.json();
+  } catch (err) {
+    document.getElementById("list").innerHTML =
+      "<p class='notice'>Could not load match data. If you opened this file " +
+      "directly, serve it instead: <code>python -m http.server</code> " +
+      "inside the <code>site</code> folder, then visit localhost:8000.</p>";
+    return;
+  }
+
+  if (data.sample) {
+    document.getElementById("sample-notice").innerHTML =
+      "<p class='notice'><strong>Sample data.</strong> Run " +
+      "<code>scripts/build_data.py</code> with your API key to fetch real fixtures.</p>";
+  }
+  render();
+}
+
+function show(tab) {
+  currentTab = tab;
+  document.getElementById("tab-upcoming").setAttribute("aria-selected", tab === "upcoming");
+  document.getElementById("tab-finished").setAttribute("aria-selected", tab === "finished");
+  render();
+}
+
+function render() {
+  const matches = data[currentTab] || [];
+  const list = document.getElementById("list");
+
+  if (matches.length === 0) {
+    list.innerHTML = "<p class='notice'>No matches in this window.</p>";
+    return;
+  }
+
+  let html = "";
+  let lastDay = "";
+
+  for (const m of matches) {
+    /* new Date() parses the UTC string; the formatters then display it in
+       the visitor's timezone automatically. UTC in storage, local at the
+       edge of display — the golden rule of time handling. */
+    const kickoff = new Date(m.utcDate);
+    const day = dayFmt.format(kickoff);
+
+    if (day !== lastDay) {              // insert a heading when the day changes
+      html += `<h2 class="date-heading">${day}</h2>`;
+      lastDay = day;
+    }
+
+    const middle = (currentTab === "finished")
+      ? `${m.home} <span class="score">${m.homeScore} – ${m.awayScore}</span> ${m.away}`
+      : `${m.home} <strong>vs</strong> ${m.away}`;
+
+    html += `
+      <article class="match">
+        <div class="kickoff">${timeFmt.format(kickoff)}<small>${currentTab === "finished" ? "FULL TIME" : "KICKOFF"}</small></div>
+        <div>
+          <div class="teams">${middle}</div>
+          <div class="meta">${m.stage ? m.stage.replaceAll("_", " ").toLowerCase() : ""}${m.venue ? " · " + m.venue : ""}</div>
+        </div>
+      </article>`;
+  }
+
+  list.innerHTML = html;
+}
+
+load();
+</script>
+</body>
+</html>

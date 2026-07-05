@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-07-05T00:00:00+00:00",
+  "sample": true,
+  "upcoming": [
+    {
+      "id": 1,
+      "utcDate": "2026-07-05T20:00:00Z",
+      "status": "TIMED",
+      "stage": "QUARTER_FINALS",
+      "home": "Sample Team A",
+      "away": "Sample Team B",
+      "homeScore": null,
+      "awayScore": null,
+      "venue": "Sample Stadium"
+    },
+    {
+      "id": 2,
+      "utcDate": "2026-07-06T23:00:00Z",
+      "status": "TIMED",
+      "stage": "QUARTER_FINALS",
+      "home": "Sample Team C",
+      "away": "Sample Team D",
+      "homeScore": null,
+      "awayScore": null,
+      "venue": "Sample Arena"
+    }
+  ],
+  "finished": [
+    {
+      "id": 3,
+      "utcDate": "2026-07-03T20:00:00Z",
+      "status": "FINISHED",
+      "stage": "ROUND_OF_16",
+      "home": "Sample Team E",
+      "away": "Sample Team F",
+      "homeScore": 2,
+      "awayScore": 1,
+      "venue": "Sample Park"
+    }
+  ]
+}
