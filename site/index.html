@@ -174,14 +174,28 @@
     .ko { display: flex; justify-content: space-between; align-items: center; background: var(--panel);
       border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 6px; }
     .ko .vs { color: var(--dim); font-weight: 400; padding: 0 4px; }
-    /* bracket projected slots */
-    .bracket-slot .side.firm { font-weight: 600; }
-    .bracket-slot .side.maybe { color: var(--dim); }
-    .bracket-slot .side.maybe em { color: var(--line); font-style: normal; padding: 0 2px; }
-    .bracket-slot .side.tbd { color: var(--line); }
-    .bracket-slot .dt.proj { color: var(--dim); font-style: italic; }
-    .bracket-slot.firm-slot { border-color: var(--lime); }
-    .bracket-slot.firm-slot .dt { color: var(--lime); }
+    /* spacious bracket cards for projected rounds */
+    .bracket-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px; margin-bottom: 12px; }
+    .bracket-card.firm-card { border-color: var(--lime); }
+    .bracket-status { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase;
+      letter-spacing: 0.08em; font-size: 0.68rem; color: var(--dim); margin-bottom: 12px; }
+    .firm-card .bracket-status { color: var(--lime); }
+    .bracket-sides { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
+    .bracket-vs { align-self: center; font-family: "Archivo", sans-serif; font-weight: 800;
+      color: var(--dim); font-size: 0.9rem; }
+    .side-block { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .side-block.firm { border-color: var(--lime); background: rgba(200,255,61,0.06); }
+    .side-cap { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+      font-size: 0.62rem; color: var(--dim); margin-bottom: 6px; }
+    .side-team { font-size: 0.9rem; font-weight: 600; padding: 3px 0; line-height: 1.3; }
+    .side-block.firm .side-team { color: var(--lime); }
+    .side-block.maybe .side-team { color: var(--chalk); opacity: 0.85; font-weight: 500; }
+    .side-block.tbd .side-team { color: var(--line); }
+    @media (max-width: 480px) {
+      .bracket-sides { grid-template-columns: 1fr; gap: 8px; }
+      .bracket-vs { text-align: center; padding: 2px 0; }
+    }
     .ko .teams { font-weight: 600; font-size: 0.95rem; }
     .ko .rs { font-family: "Archivo", sans-serif; font-weight: 900; color: var(--lime); font-variant-numeric: tabular-nums; }
     .ko .dt { font-family: "Archivo Narrow", sans-serif; font-size: 0.72rem; color: var(--dim); text-transform: uppercase; }
@@ -525,39 +539,44 @@ function renderTournament(){
     : subRound==="sf" ? Object.keys(BRACKET.sf)
     : Object.keys(BRACKET.final);
 
-  // helper to render one "side" of a tie as either a team or a possibility set
-  const sideHtml = (part)=>{
-    if(part.resolved) return "<span class='side firm'>"+flag(part.resolved)+" "+part.resolved+"</span>";
+  // helper: render one side as either a firm team or a full vertical list of possibles
+  const sideBlock = (part)=>{
+    if(part.resolved)
+      return "<div class='side-block firm'><div class='side-team'>"+flag(part.resolved)+" "+part.resolved+"</div></div>";
     const teams = part.possible||[];
-    if(teams.length===2) return "<span class='side maybe'>"+teams.map(t=>flag(t)+" "+t).join(" <em>/</em> ")+"</span>";
-    if(teams.length) return "<span class='side maybe'>"+teams.length+" possible</span>";
-    return "<span class='side tbd'>TBD</span>";
+    if(!teams.length) return "<div class='side-block tbd'><div class='side-team'>To be decided</div></div>";
+    return "<div class='side-block maybe'>" +
+      "<div class='side-cap'>"+teams.length+" possible</div>" +
+      teams.map(t=>"<div class='side-team'>"+flag(t)+" "+t+"</div>").join("") +
+    "</div>";
   };
 
   for(const key of slotKeys){
-    let sides;
     if(subRound==="r16"){
       const pair = BRACKET.r16[key];
-      const w = r16Winner(pair);
-      // for R16, try to show the real fixture (with score/date) from data
       const fx = findFixture(pair);
       if(fx){
         const done = fx.status==="FINISHED";
         const result = done ? "<span class='rs'>"+fx.homeScore+"–"+fx.awayScore+"</span>"
           : "<span class='dt'>"+dShort.format(new Date(fx.utcDate))+" "+tFmt.format(new Date(fx.utcDate))+"</span>";
         html += "<div class='ko'><span class='teams'>"+flag(fx.home)+" "+fx.home+" <span class='vs'>v</span> "+fx.away+" "+flag(fx.away)+"</span>"+result+"</div>";
-        continue;
+      } else {
+        html += "<div class='ko'><span class='teams'>"+flag(pair[0])+" "+pair[0]+" <span class='vs'>v</span> "+pair[1]+" "+flag(pair[1])+"</span></div>";
       }
-      sides = [{possible:[pair[0]]},{possible:[pair[1]]}];
-    } else {
-      const feeders = (BRACKET.qf[key]||BRACKET.sf[key]||BRACKET.final[key]);
-      sides = feeders.map(resolveSlot);
+      continue;
     }
+    // QF / SF / Final: two sides, each possibly a list of contenders
+    const feeders = (BRACKET.qf[key]||BRACKET.sf[key]||BRACKET.final[key]);
+    const sides = feeders.map(resolveSlot);
     const bothFirm = sides.every(s=>s.resolved);
-    html += "<div class='ko bracket-slot"+(bothFirm?" firm-slot":"")+"'>" +
-      "<span class='teams'>"+sideHtml(sides[0])+" <span class='vs'>v</span> "+sideHtml(sides[1])+"</span>" +
-      (bothFirm? "<span class='dt'>confirmed</span>" : "<span class='dt proj'>projected</span>") +
-      "</div>";
+    html += "<div class='bracket-card"+(bothFirm?" firm-card":"")+"'>" +
+      "<div class='bracket-status'>"+(bothFirm? "Confirmed" : "Projected — winners advance here")+"</div>" +
+      "<div class='bracket-sides'>" +
+        sideBlock(sides[0]) +
+        "<div class='bracket-vs'>vs</div>" +
+        sideBlock(sides[1]) +
+      "</div>" +
+    "</div>";
   }
   el.innerHTML = html;
 }
