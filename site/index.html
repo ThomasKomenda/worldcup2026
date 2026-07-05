@@ -27,6 +27,18 @@
     h1 .yr { color: var(--lime); }
     .tz { margin-top: 12px; font-size: 0.8rem; color: var(--dim); }
     .tz b { color: var(--chalk); font-weight: 600; }
+    .head-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+    .updated { font-family: "Archivo Narrow", sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+      font-size: 0.7rem; color: var(--dim); }
+    .share-btn { font-family: "Archivo Narrow", sans-serif; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; font-size: 0.72rem; padding: 6px 14px; border: 1px solid var(--lime);
+      border-radius: 20px; background: transparent; color: var(--lime); cursor: pointer; }
+    .share-btn:active { background: var(--lime); color: #0b1020; }
+    .share-btn:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+    /* mismatch meter */
+    .mismatch { margin-top: 8px; font-size: 0.8rem; color: var(--chalk); }
+    .mismatch b { color: var(--lime); }
+    .mismatch.even { color: var(--dim); }
     nav { display: flex; gap: 6px; margin: 22px 0 6px; flex-wrap: wrap; }
     .tab { font-family: "Archivo Narrow", sans-serif; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.08em; font-size: 0.85rem; padding: 9px 16px; border: 1px solid var(--line);
@@ -162,6 +174,14 @@
     .ko { display: flex; justify-content: space-between; align-items: center; background: var(--panel);
       border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 6px; }
     .ko .vs { color: var(--dim); font-weight: 400; padding: 0 4px; }
+    /* bracket projected slots */
+    .bracket-slot .side.firm { font-weight: 600; }
+    .bracket-slot .side.maybe { color: var(--dim); }
+    .bracket-slot .side.maybe em { color: var(--line); font-style: normal; padding: 0 2px; }
+    .bracket-slot .side.tbd { color: var(--line); }
+    .bracket-slot .dt.proj { color: var(--dim); font-style: italic; }
+    .bracket-slot.firm-slot { border-color: var(--lime); }
+    .bracket-slot.firm-slot .dt { color: var(--lime); }
     .ko .teams { font-weight: 600; font-size: 0.95rem; }
     .ko .rs { font-family: "Archivo", sans-serif; font-weight: 900; color: var(--lime); font-variant-numeric: tabular-nums; }
     .ko .dt { font-family: "Archivo Narrow", sans-serif; font-size: 0.72rem; color: var(--dim); text-transform: uppercase; }
@@ -171,6 +191,19 @@
     footer { border-top: 1px solid var(--line); padding: 22px 20px; text-align: center;
       font-family: "Archivo Narrow", sans-serif; font-size: 0.75rem; color: var(--dim);
       text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* mobile tuning: tighten grid, ensure tap targets, prevent overflow */
+    @media (max-width: 480px) {
+      .wrap, .head-inner { padding-left: 14px; padding-right: 14px; }
+      .match { grid-template-columns: 54px 1fr auto; gap: 10px; padding: 12px 12px; }
+      .clock { font-size: 1.2rem; }
+      .fixture { font-size: 0.98rem; }
+      .tab { padding: 8px 13px; font-size: 0.8rem; }
+      .pl { width: 62px; }
+      .pl .nm { font-size: 0.6rem; }
+      .team-select { max-width: 60vw; }
+      .detail-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
   </style>
 </head>
 <body>
@@ -179,6 +212,10 @@
     <div class="kicker">Canada · Mexico · USA</div>
     <h1>World Cup <span class="yr">'26</span></h1>
     <div class="tz" id="tz">Kickoff times shown in your local time</div>
+    <div class="head-meta">
+      <span class="updated" id="updated"></span>
+      <button class="share-btn" onclick="shareSite()" aria-label="Share this site">Share</button>
+    </div>
   </div>
 </header>
 <div class="wrap">
@@ -197,10 +234,20 @@ let data = { upcoming: [], finished: [] };
 let squads = null, standings = null;
 let tab = "upcoming";
 let subRound = null;
-let teamFilter = null;               // when set, show only this team's matches/path
+let teamFilter = null;
 let openId = null;
 let openTeam = {}, openMode = {};
 let tick = null, poll = null;
+
+// Remember the last tab + team filter across visits. localStorage works on the
+// deployed GitHub Pages site (not in sandboxed previews) — that's expected.
+function saveState(){
+  try { localStorage.setItem("wc26", JSON.stringify({tab, teamFilter})); } catch(e){}
+}
+function loadState(){
+  try { const s = JSON.parse(localStorage.getItem("wc26")||"{}");
+    if(s.tab) tab = s.tab; if(s.teamFilter) teamFilter = s.teamFilter; } catch(e){}
+}
 
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 document.getElementById("tz").innerHTML = "Kickoff times in your local time · <b>" + tz + "</b>";
@@ -230,6 +277,60 @@ const FLAGS = {
 };
 function flag(name){ return FLAGS[name] || "🏳️"; }
 
+// ---- Hardcoded knockout bracket (FIFA official wiring, keyed to the R16 ties) ----
+// Each R16 tie is a "slot" identified by its two teams. QF/SF/Final slots are
+// defined by which earlier slots feed them. We resolve each slot to either the
+// actual winner (from finished-match data) or the pair of possible teams.
+const BRACKET = {
+  // Round of 16 slots: [teamA, teamB]  (order per FIFA match numbers)
+  r16: {
+    m89: ["Paraguay","France"], m90: ["Canada","Morocco"],
+    m91: ["Brazil","Norway"],   m92: ["Mexico","England"],
+    m93: ["Portugal","Spain"],  m94: ["USA","Belgium"],
+    m95: ["Argentina","Egypt"], m96: ["Switzerland","Colombia"]
+  },
+  // Quarter-finals: each QF fed by two R16 slots
+  qf: { m97:["m89","m90"], m98:["m93","m94"], m99:["m91","m92"], m100:["m95","m96"] },
+  // Semi-finals: each fed by two QFs
+  sf: { m101:["m97","m98"], m102:["m99","m100"] },
+  // Final: fed by two SFs
+  final: { m104:["m101","m102"] }
+};
+// football-data may spell USA as "United States" — normalize for matching.
+function normTeam(n){ return n==="United States"?"USA":n; }
+
+// Find the winner of an R16 tie from finished-match data, else null.
+function r16Winner(pair){
+  const [a,b] = pair;
+  const all = [...(data.finished||[]),...(data.upcoming||[])];
+  for(const m of all){
+    const h=normTeam(m.home), aw=normTeam(m.away);
+    if((h===a&&aw===b)||(h===b&&aw===a)){
+      if(m.status!=="FINISHED" || m.homeScore==null) return null;
+      // winner by score (penalties not in this data — score is full-time)
+      if(m.homeScore>m.awayScore) return h;
+      if(m.awayScore>m.homeScore) return aw;
+      return null; // draw without decisive score in data
+    }
+  }
+  return null;
+}
+// Resolve a slot key to {resolved: teamName} or {possible: [teams...]}.
+function resolveSlot(key){
+  if(BRACKET.r16[key]){
+    const w = r16Winner(BRACKET.r16[key]);
+    return w ? {resolved:w} : {possible: BRACKET.r16[key]};
+  }
+  const feeders = (BRACKET.qf[key]||BRACKET.sf[key]||BRACKET.final[key]);
+  if(!feeders) return {possible:[]};
+  const parts = feeders.map(resolveSlot);
+  // if both feeders resolved, this slot's contenders are those two winners
+  const poss = [];
+  for(const p of parts){ if(p.resolved) poss.push(p.resolved); else poss.push(...p.possible); }
+  // a slot is "resolved" as a matchup only when both feeders resolved
+  return {possible: poss, sides: parts};
+}
+
 // Human-readable stage names
 const STAGE_NAMES = {
   "GROUP_STAGE":"Groups", "LAST_32":"Last 32", "ROUND_OF_32":"Last 32",
@@ -248,6 +349,7 @@ function lineOf(pos){ const p=(pos||"").toLowerCase();
 const LINE_LABELS = ["Goalkeeper","Defence","Midfield","Attack"];
 
 async function load(){
+  loadState();   // restore last tab + team filter
   try { data = await (await fetch("data/matches.json?t="+Date.now())).json(); }
   catch(e){ document.getElementById("view").innerHTML =
     "<p class='notice'>Match data isn't loading. If you opened the file directly, serve it with <code>python -m http.server</code> from the <code>site</code> folder.</p>"; return; }
@@ -255,6 +357,15 @@ async function load(){
   try { standings = (await (await fetch("data/standings.json?t="+Date.now())).json()).standings; } catch(e){ standings=null; }
   if(data.sample) document.getElementById("notice-slot").innerHTML =
     "<p class='notice'>Showing sample data. Run the build to load real fixtures.</p>";
+  // reflect restored tab in the buttons
+  ["upcoming","finished","tournament"].forEach(x=> {
+    const btn=document.getElementById("tab-"+x); if(btn) btn.setAttribute("aria-selected", x===tab); });
+  // freshness timestamp from the data's generatedAt
+  if(data.generatedAt){
+    const upd = new Date(data.generatedAt);
+    const el = document.getElementById("updated");
+    if(el) el.textContent = "Updated " + new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(upd);
+  }
   render(); timers();
 }
 function timers(){
@@ -265,7 +376,7 @@ function timers(){
   poll = setInterval(async()=>{ if((data.upcoming||[]).some(m=>m.status==="IN_PLAY"||m.status==="PAUSED")){
     try{ data=await (await fetch("data/matches.json?t="+Date.now())).json(); render(); }catch(e){} } },60000);
 }
-function show(t){ tab=t; openId=null;
+function show(t){ tab=t; openId=null; saveState();
   ["upcoming","finished","tournament"].forEach(x=> document.getElementById("tab-"+x).setAttribute("aria-selected", x===t));
   render(); }
 function toggle(id){ openId = openId===id? null : id; render(); }
@@ -306,9 +417,21 @@ function detail(m){
   let compare = "";
   if(hv || av){
     const tot = hv+av || 1, hpct = Math.round(hv/tot*100);
+    // Mismatch meter: how lopsided is this tie by squad value?
+    const hi = Math.max(hv,av), lo = Math.min(hv,av);
+    const ratio = lo>0 ? hi/lo : 0;
+    let mismatch = "";
+    if(ratio >= 1.5 && lo > 0){
+      const favUsesFlag = hv>av ? flag(m.home) : flag(m.away);
+      const favName = hv>av ? m.home : m.away;
+      const label = ratio>=3 ? "Big mismatch" : "Favourite";
+      mismatch = "<div class='mismatch'>"+favUsesFlag+" <b>"+favName+"</b> — "+ratio.toFixed(1)+"× the squad value</div>";
+    } else if(lo>0){
+      mismatch = "<div class='mismatch even'>Evenly matched by squad value</div>";
+    }
     compare = "<div class='vbar-wrap'><div class='vbar-heads'>" +
       "<span>"+flag(m.home)+" "+money(hv)+"</span><span>"+money(av)+" "+flag(m.away)+"</span></div>" +
-      "<div class='vbar'><div class='vbar-h' style='width:"+hpct+"%'></div></div></div>";
+      "<div class='vbar'><div class='vbar-h' style='width:"+hpct+"%'></div></div>" + mismatch + "</div>";
   }
 
   return "<div class='detail'>" +
@@ -365,27 +488,21 @@ function renderMatches(){
   el.innerHTML = html;
 }
 
-// Tournament tab with sub-tabs: Groups + each knockout round.
+// Tournament tab with sub-tabs: Groups + all knockout rounds (always shown).
 function renderTournament(){
   const el = document.getElementById("view");
-  const all = [...(data.finished||[]), ...(data.upcoming||[])];
 
-  // Which knockout stages exist in the data?
-  const byStage = {};
-  for(const m of all){
-    if(!m.stage || m.stage==="GROUP_STAGE") continue;
-    (byStage[m.stage] = byStage[m.stage] || []).push(m);
-  }
-  const koStages = Object.keys(byStage).sort((a,b)=> STAGE_ORDER.indexOf(a)-STAGE_ORDER.indexOf(b));
-
-  // Build the sub-tab list: Groups first (if standings), then each KO round.
-  const subs = [];
-  if(standings && standings.length) subs.push({key:"groups", label:"Groups"});
-  for(const s of koStages) subs.push({key:s, label:stageName(s)});
-  if(!subs.length){ el.innerHTML = "<p class='notice'>Group tables and knockout fixtures appear once the build runs.</p>"; return; }
-
-  // Default sub-tab: the latest round that has matches, else Groups.
-  if(!subRound || !subs.find(s=>s.key===subRound)) subRound = subs[subs.length-1].key;
+  // Fixed round list — always present so users see the full tournament shape.
+  const rounds = [
+    {key:"groups", label:"Groups"},
+    {key:"r16",    label:"Last 16"},
+    {key:"qf",     label:"Quarter-finals"},
+    {key:"sf",     label:"Semi-finals"},
+    {key:"final",  label:"Final"}
+  ];
+  const haveGroups = standings && standings.length;
+  const subs = haveGroups ? rounds : rounds.filter(r=>r.key!=="groups");
+  if(!subRound || !subs.find(s=>s.key===subRound)) subRound = "r16";
 
   let html = "<div class='subtabs'>" + subs.map(s =>
     "<button class='subtab' aria-selected='"+(s.key===subRound)+"' onclick=\"setRound('"+s.key+"')\">"+s.label+"</button>"
@@ -399,34 +516,70 @@ function renderTournament(){
         rows.map((r,i)=>"<tr class='"+(i<2?"qual":"")+"'><td>"+flag(r.team.name)+" "+r.team.name+"</td><td>"+r.playedGames+"</td><td>"+r.won+"</td><td>"+r.draw+"</td><td>"+r.lost+"</td><td>"+r.goalDifference+"</td><td class='pts'>"+r.points+"</td></tr>").join("") +
         "</tbody></table></div>";
     }
-  } else {
-    const ms = (byStage[subRound]||[]).sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
-    for(const m of ms){
-      const done = m.status==="FINISHED";
-      // Potential-matchup handling: football-data uses literal team names once
-      // known. If a side is a placeholder/blank, show TBD honestly.
-      const home = m.home && m.home!=="TBD" ? flag(m.home)+" "+m.home : "TBD";
-      const away = m.away && m.away!=="TBD" ? m.away+" "+flag(m.away) : "TBD";
-      const result = done
-        ? "<span class='rs'>"+m.homeScore+"–"+m.awayScore+"</span>"
-        : "<span class='dt'>"+dShort.format(new Date(m.utcDate))+" "+tFmt.format(new Date(m.utcDate))+"</span>";
-      html += "<div class='ko'><span class='teams'>"+home+" <span class='vs'>v</span> "+away+"</span>"+result+"</div>";
-    }
-    // Potential opponents note for the NEXT round, derived from THIS round's real fixtures.
-    const idx = STAGE_ORDER.indexOf(subRound);
-    const nextStage = STAGE_ORDER.slice(idx+1).find(s => STAGE_NAMES[s]);
-    if(nextStage && ms.length){
-      const contenders = ms.filter(m=>m.status!=="FINISHED").map(m=>m.home+"/"+m.away).filter(x=>!x.includes("TBD"));
-      if(contenders.length){
-        html += "<div class='potential'><div class='pot-label'>Possible "+stageName(nextStage)+" entrants from this round</div>" +
-          contenders.map(c=>"<span class='pot-chip'>"+c+"</span>").join("") + "</div>";
+    el.innerHTML = html; return;
+  }
+
+  // Knockout rounds from the bracket structure.
+  const slotKeys = subRound==="r16" ? Object.keys(BRACKET.r16)
+    : subRound==="qf" ? Object.keys(BRACKET.qf)
+    : subRound==="sf" ? Object.keys(BRACKET.sf)
+    : Object.keys(BRACKET.final);
+
+  // helper to render one "side" of a tie as either a team or a possibility set
+  const sideHtml = (part)=>{
+    if(part.resolved) return "<span class='side firm'>"+flag(part.resolved)+" "+part.resolved+"</span>";
+    const teams = part.possible||[];
+    if(teams.length===2) return "<span class='side maybe'>"+teams.map(t=>flag(t)+" "+t).join(" <em>/</em> ")+"</span>";
+    if(teams.length) return "<span class='side maybe'>"+teams.length+" possible</span>";
+    return "<span class='side tbd'>TBD</span>";
+  };
+
+  for(const key of slotKeys){
+    let sides;
+    if(subRound==="r16"){
+      const pair = BRACKET.r16[key];
+      const w = r16Winner(pair);
+      // for R16, try to show the real fixture (with score/date) from data
+      const fx = findFixture(pair);
+      if(fx){
+        const done = fx.status==="FINISHED";
+        const result = done ? "<span class='rs'>"+fx.homeScore+"–"+fx.awayScore+"</span>"
+          : "<span class='dt'>"+dShort.format(new Date(fx.utcDate))+" "+tFmt.format(new Date(fx.utcDate))+"</span>";
+        html += "<div class='ko'><span class='teams'>"+flag(fx.home)+" "+fx.home+" <span class='vs'>v</span> "+fx.away+" "+flag(fx.away)+"</span>"+result+"</div>";
+        continue;
       }
+      sides = [{possible:[pair[0]]},{possible:[pair[1]]}];
+    } else {
+      const feeders = (BRACKET.qf[key]||BRACKET.sf[key]||BRACKET.final[key]);
+      sides = feeders.map(resolveSlot);
     }
+    const bothFirm = sides.every(s=>s.resolved);
+    html += "<div class='ko bracket-slot"+(bothFirm?" firm-slot":"")+"'>" +
+      "<span class='teams'>"+sideHtml(sides[0])+" <span class='vs'>v</span> "+sideHtml(sides[1])+"</span>" +
+      (bothFirm? "<span class='dt'>confirmed</span>" : "<span class='dt proj'>projected</span>") +
+      "</div>";
   }
   el.innerHTML = html;
 }
+// Find a real fixture in the data matching a team pair.
+function findFixture(pair){
+  const [a,b]=pair; const all=[...(data.finished||[]),...(data.upcoming||[])];
+  return all.find(m=>{ const h=normTeam(m.home),aw=normTeam(m.away);
+    return (h===a&&aw===b)||(h===b&&aw===a); });
+}
 function setRound(k){ subRound = k; render(); }
-function setFilter(t){ teamFilter = t || null; openId=null; render(); }
+function setFilter(t){ teamFilter = t || null; openId=null; saveState(); render(); }
+
+// Share: uses the native share sheet on mobile, falls back to copying the link.
+async function shareSite(){
+  const url = location.href, title = "World Cup 2026 · Matchday";
+  try {
+    if(navigator.share){ await navigator.share({title, url}); return; }
+    await navigator.clipboard.writeText(url);
+    const btn = document.querySelector(".share-btn");
+    if(btn){ const o=btn.textContent; btn.textContent="Link copied"; setTimeout(()=>btn.textContent=o,1600); }
+  } catch(e){ /* user cancelled share — ignore */ }
+}
 
 function render(){ tab==="tournament"? renderTournament() : renderMatches(); }
 load();
