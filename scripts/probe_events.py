@@ -1,12 +1,9 @@
 """
-probe_events.py — a five-minute experiment, not a feature.
+Diagnostic script: checks whether the football-data.org matches endpoint
+returns goal or event-level detail for a World Cup fixture.
 
-Before we build a goalscorers view, we need to know: does football-data.org's
-FREE tier actually return goal/event data? Rather than assume, we ASK — fetch
-one recent finished match in full detail and print exactly what the API gives
-back. This is the "verify the data exists before designing the feature" habit.
-
-Run:  FOOTBALL_DATA_API_KEY=your_key python scripts/probe_events.py
+Not part of the production pipeline. Used during development to determine
+whether the API could support event-based features before building on it.
 """
 
 import json
@@ -16,8 +13,8 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 # Load a local .env file if python-dotenv is installed (for local testing).
-# In GitHub Actions there's no .env and the package isn't installed — the key
-# comes from repository secrets — so we import defensively and move on.
+# In GitHub Actions the package is absent and credentials come from
+# repository secrets, so the import is guarded.
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -63,13 +60,13 @@ def main() -> None:
     goals = detail.get("goals")
     print("=== 'goals' field ===")
     if goals:
-        print(f"  PRESENT — {len(goals)} goals returned. Sample keys: {list(goals[0].keys())}")
+        print(f"  PRESENT: {len(goals)} goals returned. Sample keys: {list(goals[0].keys())}")
         for g in goals:
             scorer = g.get("scorer", {}).get("name", "?")
             minute = g.get("minute", "?")
             print(f"    {minute}'  {scorer}")
     else:
-        print("  EMPTY or absent on this tier — a goalscorers feature is NOT feasible on free.")
+        print("  EMPTY or absent on this tier: a goalscorers feature is NOT feasible on free.")
 
     print("\n=== other potentially useful fields present ===")
     for key in ("bookings", "substitutions", "referees", "score"):

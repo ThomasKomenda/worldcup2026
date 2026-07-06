@@ -1,11 +1,15 @@
 {
-  "generatedAt": "2026-07-05T00:00:00+00:00",
-  "sample": true,
-  "upcoming": [
-    {"id":1,"utcDate":"2026-07-05T20:00:00Z","status":"TIMED","stage":"QUARTER_FINALS","home":"Argentina","away":"Spain","homeId":10,"awayId":20,"homeScore":null,"awayScore":null,"venue":"MetLife Stadium"},
-    {"id":2,"utcDate":"2026-07-06T23:00:00Z","status":"TIMED","stage":"QUARTER_FINALS","home":"France","away":"Brazil","homeId":30,"awayId":40,"homeScore":null,"awayScore":null,"venue":"AT&T Stadium"}
+  "generatedAt":"2026-07-05T12:00:00+00:00","sample":true,
+  "upcoming":[
+    {"id":92,"utcDate":"2026-07-06T02:00:00Z","status":"TIMED","stage":"ROUND_OF_16","home":"Mexico","away":"England","homeId":1,"awayId":2,"homeScore":null,"awayScore":null,"venue":"Estadio Azteca"},
+    {"id":93,"utcDate":"2026-07-06T21:00:00Z","status":"TIMED","stage":"ROUND_OF_16","home":"Portugal","away":"Spain","homeId":3,"awayId":4,"homeScore":null,"awayScore":null,"venue":"AT&T Stadium"},
+    {"id":94,"utcDate":"2026-07-07T02:00:00Z","status":"TIMED","stage":"ROUND_OF_16","home":"United States","away":"Belgium","homeId":5,"awayId":6,"homeScore":null,"awayScore":null,"venue":"Lumen Field"},
+    {"id":95,"utcDate":"2026-07-07T18:00:00Z","status":"TIMED","stage":"ROUND_OF_16","home":"Argentina","away":"Egypt","homeId":7,"awayId":8,"homeScore":null,"awayScore":null,"venue":"Mercedes-Benz Stadium"},
+    {"id":96,"utcDate":"2026-07-07T22:00:00Z","status":"TIMED","stage":"ROUND_OF_16","home":"Switzerland","away":"Colombia","homeId":9,"awayId":10,"homeScore":null,"awayScore":null,"venue":"BC Place"}
   ],
-  "finished": [
-    {"id":3,"utcDate":"2026-07-03T20:00:00Z","status":"FINISHED","stage":"ROUND_OF_16","home":"Argentina","away":"Portugal","homeId":10,"awayId":50,"homeScore":2,"awayScore":1,"venue":"SoFi Stadium"}
+  "finished":[
+    {"id":90,"utcDate":"2026-07-04T17:00:00Z","status":"FINISHED","stage":"ROUND_OF_16","home":"Canada","away":"Morocco","homeId":11,"awayId":12,"homeScore":0,"awayScore":3,"venue":"NRG Stadium"},
+    {"id":89,"utcDate":"2026-07-04T21:00:00Z","status":"FINISHED","stage":"ROUND_OF_16","home":"Paraguay","away":"France","homeId":13,"awayId":14,"homeScore":0,"awayScore":1,"venue":"Philadelphia"},
+    {"id":91,"utcDate":"2026-07-05T20:00:00Z","status":"FINISHED","stage":"ROUND_OF_16","home":"Brazil","away":"Norway","homeId":15,"awayId":16,"homeScore":1,"awayScore":2,"venue":"MetLife Stadium"}
   ]
 }

@@ -1,14 +1,15 @@
 """
-build_data.py — fetches World Cup match data AND team squads, joins market
-values onto players, and writes JSON files for the website.
+Fetches World Cup match data and team squads, joins player market values, and
+writes the JSON files consumed by the frontend.
 
-This is the FAST data rhythm (every 3 hours, via GitHub Actions):
-  1. matches in a window: 4 days back to 2 days ahead  -> matches.json
-  2. the squad of every team in that window            -> squads.json
-     ...with market values joined from values.json (produced weekly
-     by the other workflow).
+Runs every three hours via GitHub Actions and produces three files:
+  matches.json   fixtures and results in a window of 4 days back to 2 days ahead
+  squads.json    squad of every team in that window, with market values joined
+                 from values.json (generated weekly by extract_values.py)
+  standings.json group tables
 
-Run locally:  FOOTBALL_DATA_API_KEY=your_key python scripts/build_data.py
+Local execution:
+  FOOTBALL_DATA_API_KEY=<key> python scripts/build_data.py
 """
 
 import json
@@ -20,9 +21,9 @@ import unicodedata
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-# Load a local .env file if python-dotenv is installed (for local testing).
-# In GitHub Actions there's no .env and the package isn't installed — the key
-# comes from repository secrets — so we import defensively and move on.
+# Load a local .env file when python-dotenv is available. In GitHub Actions the
+# package is absent and the API key is supplied via repository secrets, so the
+# import is guarded and the absence of dotenv is a no-op.
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -37,8 +38,9 @@ MATCHES_FILE = os.path.join(DATA_DIR, "matches.json")
 SQUADS_FILE = os.path.join(DATA_DIR, "squads.json")
 VALUES_FILE = os.path.join(DATA_DIR, "values.json")
 
-# football-data.org free tier allows 10 requests/minute. We sleep between
-# calls to stay politely under it. 1 matches call + up to ~16 team calls.
+# The football-data.org free tier permits 10 requests per minute. Calls are
+# spaced to stay within this limit: 1 matches request plus up to ~16 team
+# requests per build.
 SECONDS_BETWEEN_CALLS = 7
 
 
@@ -71,15 +73,15 @@ def simplify_match(match: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Name matching — joining two datasets that share no IDs.
+# Name matching: joining two datasets that share no common identifier.
 #
-# football-data.org spells a player one way, Transfermarkt another
-# ("Heung-Min Son" vs "Son Heung-min"). Strategy:
-#   1. normalize: strip accents, lowercase, drop punctuation
-#   2. SORT the name parts, so word order stops mattering
-#   3. if that fails, fall back to last name + nationality
-# This "entity reconciliation" is imperfect by nature — we also report
-# how many players we failed to match, because honest data shows its gaps.
+# football-data.org and Transfermarkt spell player names differently
+# ("Heung-Min Son" vs "Son Heung-min"). The matching strategy is:
+#   1. Normalize: strip accents, lowercase, remove punctuation.
+#   2. Sort the name tokens so word order does not affect the match.
+#   3. Fall back to last name plus nationality when the sorted match fails.
+# Entity reconciliation across sources is inherently imperfect, so the build
+# also reports the number of unmatched players.
 # ---------------------------------------------------------------------------
 
 def norm_tokens(name: str) -> list:
@@ -90,8 +92,8 @@ def norm_tokens(name: str) -> list:
 
 
 def build_value_index(values: list) -> tuple:
-    exact = {}      # "heung min son" -> player record
-    by_last = {}    # "son" -> [records]  (fallback)
+    exact = {}      # normalized sorted name -> player record
+    by_last = {}    # last name -> [records], used as fallback
     for p in values:
         tokens = norm_tokens(p["name"])
         if not tokens:
@@ -109,7 +111,7 @@ def find_value(player_name: str, nationality: str, exact: dict, by_last: dict):
     hit = exact.get(" ".join(tokens))
     if hit:
         return hit
-    # Fallback: same last name AND same nationality, if that's unambiguous.
+    # Fallback: match on last name plus nationality when unambiguous.
     candidates = [
         p for p in by_last.get(tokens[-1], [])
         if p.get("nationality") and nationality
@@ -117,7 +119,7 @@ def find_value(player_name: str, nationality: str, exact: dict, by_last: dict):
     ]
     if len(candidates) == 1:
         return candidates[0]
-    return None  # ambiguous or missing — better no value than a wrong one
+    return None  # ambiguous or missing; omit rather than risk a wrong value
 
 
 # ---------------------------------------------------------------------------
@@ -149,10 +151,10 @@ def main() -> None:
         }, f, indent=2, ensure_ascii=False)
     print(f"matches.json: {len(upcoming)} upcoming, {len(finished)} finished")
 
-    # ---- standings (for the group tables / bracket) ----------------------
-    # One extra API call. Wrapped in try/except because during the knockout
-    # stage the standings endpoint can return differently than in groups —
-    # we'd rather skip this gracefully than fail the whole build.
+    # ---- standings (group tables) ----------------------------------------
+    # The standings endpoint may respond differently during the knockout
+    # stage than during the group stage. It is wrapped in try/except so a
+    # failure here skips standings rather than failing the entire build.
     try:
         st = api_get(f"/competitions/{COMPETITION}/standings")
         with open(os.path.join(DATA_DIR, "standings.json"), "w", encoding="utf-8") as f:
@@ -160,20 +162,20 @@ def main() -> None:
                        "standings": st.get("standings", [])}, f, indent=2, ensure_ascii=False)
         print(f"standings.json: {len(st.get('standings', []))} groups/tables")
     except Exception as err:
-        print(f"standings skipped ({err}) — bracket will use match stages instead")
+        print(f"standings skipped ({err}); bracket falls back to match stages")
 
     # ---- squads ----------------------------------------------------------
-    # Load the weekly market values, if the weekly workflow has produced them.
+    # Load market values if extract_values.py has produced values.json.
     values = []
     if os.path.exists(VALUES_FILE):
         with open(VALUES_FILE, encoding="utf-8") as f:
             values = json.load(f).get("players", [])
         print(f"Loaded {len(values)} market values")
     else:
-        print("No values.json yet — squads will appear without market values.")
+        print("No values.json found; squads will render without market values.")
     exact, by_last = build_value_index(values)
 
-    # Every team appearing in the window, deduplicated.
+    # Deduplicated set of teams appearing in the window.
     teams = {}
     for m in matches:
         teams[m["homeId"]] = m["home"]
@@ -181,7 +183,7 @@ def main() -> None:
 
     squads = {}
     for team_id, team_name in teams.items():
-        time.sleep(SECONDS_BETWEEN_CALLS)   # stay under 10 requests/minute
+        time.sleep(SECONDS_BETWEEN_CALLS)   # respect the 10 req/min limit
         print(f"Fetching squad: {team_name}")
         team = api_get(f"/teams/{team_id}")
 
@@ -199,7 +201,7 @@ def main() -> None:
 
         players.sort(key=lambda x: x["value_eur"] or 0, reverse=True)
         squads[team_name] = {
-            "crest": team.get("crest"),          # national-team crest URL for the pitch view
+            "crest": team.get("crest"),          # crest URL used by the pitch view
             "players": players,
             "matched": matched,
             "squadSize": len(players),

@@ -1,19 +1,11 @@
 """
-probe_thesportsdb.py — check whether TheSportsDB's FREE tier can deliver
-World Cup 2026 lineups, AND whether that data is actually correct.
+Diagnostic script: checks whether TheSportsDB's free tier provides complete
+and accurate World Cup 2026 lineups.
 
-TheSportsDB is crowd-sourced (Wikipedia-style), so two things are uncertain:
-  (a) COVERAGE — does the free tier even let us find 2026 WC matches and
-      their lineups? (the free tier caps many endpoints hard)
-  (b) ACCURACY — is the lineup data complete and correct, or partial/stale?
-
-This probe prints raw results so you can EYEBALL them against a trusted
-source (FIFA.com, ESPN, Wikipedia) — because a probe only tells you what
-the API returned, not whether it's right. Validation is your job.
-
-No signup needed: TheSportsDB's public free key is the string "123".
-
-Run:  python scripts/probe_thesportsdb.py
+Verifies two things: whether the free tier exposes 2026 fixtures at all, and
+whether the lineup records for those fixtures are complete. Prints raw output
+for manual comparison against a trusted source. Not part of the production
+pipeline.
 """
 
 import json
@@ -41,7 +33,7 @@ def get(path: str) -> dict:
 
 def main() -> None:
     print("=" * 70)
-    print("STEP 1 — Can the free tier even FIND World Cup 2026 matches?")
+    print("STEP 1. Can the free tier even FIND World Cup 2026 matches?")
     print("=" * 70)
     # Try to pull the 2026 season schedule for the World Cup league.
     season = get(f"eventsseason.php?id={WC_LEAGUE_ID}&s=2026")
@@ -72,7 +64,7 @@ def main() -> None:
     eid = target.get("idEvent")
 
     print("\n" + "=" * 70)
-    print(f"STEP 2 — Does that match have LINEUP data on the free tier?")
+    print(f"STEP 2. Does that match have LINEUP data on the free tier?")
     print("=" * 70)
     print(f"  Testing match: {target.get('strEvent')} (id={eid})")
     lineup = get(f"lookuplineup.php?id={eid}")
@@ -80,12 +72,12 @@ def main() -> None:
 
     print("\n=== LINEUP VERDICT ===")
     if not rows:
-        print("  EMPTY — no lineup data for this match on the free tier.")
+        print("  EMPTY: no lineup data for this match on the free tier.")
         print("  -> Crowd-sourced gap. Pitch view NOT reliably feasible here.")
     else:
-        # Count how many have a position — a pitch view needs positions.
+        # Count players with a position; a pitch view requires positions.
         with_pos = [r for r in rows if r.get("strPosition")]
-        print(f"  PRESENT — {len(rows)} player rows, {len(with_pos)} with a position.")
+        print(f"  PRESENT: {len(rows)} player rows, {len(with_pos)} with a position.")
         print("\n  Sample (EYEBALL against the real starting XI for this match):")
         for r in rows[:6]:
             print(f"    {r.get('strPosition','?'):3s}  {r.get('strPlayer','?')}  "
@@ -94,7 +86,7 @@ def main() -> None:
 
     print("\n" + "=" * 70)
     print("NEXT: VALIDATE the printed data against a trusted source before")
-    print("trusting it — FIFA.com, ESPN, or Wikipedia for this exact match.")
+    print("trusting it: FIFA.com, ESPN, or Wikipedia for this exact match.")
     print("Crowd-sourced != correct. Check completeness AND accuracy.")
     print("=" * 70)
 

@@ -1,14 +1,14 @@
 """
-extract_values.py — pulls player market values from the transfermarkt-datasets
-project and saves them as site/data/values.json.
+Extracts player market values from the transfermarkt-datasets project and
+writes them to site/data/values.json.
 
-This is the SLOW data rhythm: the source dataset refreshes weekly, so this
-script runs weekly (see .github/workflows/update_values.yml). The fast
-3-hourly build then joins these values onto squads.
+Runs weekly (see .github/workflows/update_values.yml), matching the weekly
+refresh cadence of the source dataset. build_data.py then joins these values
+onto squads during its three-hourly run.
 
-The clever bit: we never download the whole database. DuckDB can run SQL
-directly against a CSV file sitting on the internet — it fetches only what
-the query needs.
+The query runs directly against a remote gzipped CSV via DuckDB's httpfs
+extension. Only the columns and rows the query selects are transferred; the
+full dataset is never downloaded.
 """
 
 import json
@@ -17,9 +17,9 @@ import sys
 
 import duckdb  # installed by the workflow: pip install duckdb
 
-# Load a local .env file if python-dotenv is installed (for local testing).
-# In GitHub Actions there's no .env and the package isn't installed — the key
-# comes from repository secrets — so we import defensively and move on.
+# Load a local .env file when python-dotenv is available. In GitHub Actions
+# the package is absent and credentials come from repository secrets, so the
+# import is guarded.
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -31,9 +31,8 @@ PLAYERS_CSV = "https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/players.
 
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "..", "site", "data", "values.json")
 
-# Your first real SQL query. Read it aloud: "from the players table, keep
-# name, nationality, club and market value, for players active recently
-# who have a known market value."
+# Select name, nationality, club, and market value for players active in
+# recent seasons that have a known market value.
 QUERY = f"""
     SELECT
         name,
@@ -48,15 +47,16 @@ QUERY = f"""
 
 def main() -> None:
     con = duckdb.connect()
-    # httpfs is DuckDB's extension for reading files over the internet.
+    # httpfs enables DuckDB to read files over HTTP.
     con.execute("INSTALL httpfs; LOAD httpfs;")
 
-    print("Querying remote players table (this fetches a few MB) ...")
+    print("Querying remote players table...")
     try:
         rows = con.execute(QUERY).fetchall()
     except Exception as err:
-        # Defensive habit: community datasets can rename columns. If that
-        # happens, print what IS there so the fix is obvious from the log.
+        # Community datasets may rename columns between refreshes. On query
+        # failure, print the available columns so the schema change is
+        # visible in the workflow log.
         print(f"Query failed: {err}")
         cols = con.execute(
             f"SELECT * FROM read_csv_auto('{PLAYERS_CSV}') LIMIT 0"

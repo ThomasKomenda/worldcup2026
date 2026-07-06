@@ -1,20 +1,9 @@
 """
-probe_apifootball.py — verify what API-Football's FREE tier actually returns
-for the World Cup, BEFORE we rewrite anything to use it.
+Diagnostic script: inspects what the API-Football free tier returns for the
+World Cup, specifically whether lineups and events are accessible without a
+paid plan.
 
-We've been burned twice by "the field exists but the free tier is empty," so
-this probe answers the specific questions that decide whether the pitch view
-is buildable for free:
-
-  1. Does the free tier cover World Cup 2026 at all?
-  2. For a FINISHED match, does it return lineups? With positions/grid?
-  3. Does it return the market-value-relevant player info?
-  4. How many of our daily-100 requests does a typical match cost?
-
-Run:
-  1. Sign up free at https://www.api-football.com/  (no credit card)
-  2. Put your key in .env as:  API_FOOTBALL_KEY=your_key_here
-  3. python scripts/probe_apifootball.py
+Not part of the production pipeline.
 """
 
 import json
@@ -41,7 +30,7 @@ def api_get(path: str) -> dict:
     url = f"https://{HOST}{path}"
     req = urllib.request.Request(url, headers={"x-apisports-key": API_KEY})
     with urllib.request.urlopen(req) as resp:
-        # These headers tell us our remaining daily quota — worth watching.
+        # These headers tell us our remaining daily quota.
         remaining = resp.headers.get("x-ratelimit-requests-remaining", "?")
         limit = resp.headers.get("x-ratelimit-requests-limit", "?")
         print(f"    [quota: {remaining}/{limit} requests left today]")
@@ -64,7 +53,7 @@ def main() -> None:
         print("  World Cup 2026 not found on this tier/season. Trying 2022 as a fallback probe ...")
         season = 2022
     else:
-        print(f"  Found: {league['response'][0]['league']['name']} — coverage listed.")
+        print(f"  Found: {league['response'][0]['league']['name']}: coverage listed.")
         season = 2026
 
     # --- Q2: get a finished match, then ask for its lineup ----------------
@@ -88,14 +77,14 @@ def main() -> None:
 
     print("\n=== LINEUP VERDICT ===")
     if not resp:
-        print("  EMPTY — free tier does NOT return lineups for this match.")
+        print("  EMPTY: free tier does NOT return lineups for this match.")
         print("  -> The pitch view is NOT feasible on API-Football free either.")
         return
 
     team0 = resp[0]
     formation = team0.get("formation")
     players = team0.get("startXI", [])
-    print(f"  PRESENT — {home} formation: {formation}, {len(players)} starters returned.")
+    print(f"  PRESENT: {home} formation: {formation}, {len(players)} starters returned.")
 
     # The crucial detail for a PITCH view: do we get positions / grid coords?
     if players:
@@ -114,7 +103,7 @@ def main() -> None:
     print("  If PRESENT with 'grid': we can build a TRUE pitch view with players")
     print("     at real positions. Worth migrating to API-Football.")
     print("  If PRESENT without 'grid': we can place players by 'pos' lines")
-    print("     (GK/DEF/MID/FWD) — still a real lineup, slightly less precise.")
+    print("     (GK/DEF/MID/FWD): still a real lineup, slightly less precise.")
     print("  If EMPTY: lineups aren't free here; stick with squad-by-position view.")
 
 

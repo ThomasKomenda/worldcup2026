@@ -1,6 +1,10 @@
 """
-probe_lineups.py (v3) — same checks, no pandas/numpy dependency.
-Uses plain fetchall() so it runs with only duckdb installed.
+Diagnostic script: checks whether the transfermarkt-datasets game_lineups
+table contains complete starting elevens with usable positions for the 2026
+World Cup.
+
+Queries the table via DuckDB using plain fetchall(), requiring only the duckdb
+package. Not part of the production pipeline.
 """
 
 import duckdb
