@@ -2,9 +2,9 @@
 
 A static website that shows upcoming World Cup matches (next 2 days) in the
 visitor's local time, plus recent results. Rebuilt automatically every 3 hours
-by GitHub Actions — no server required.
+by GitHub Actions.
 
-## Architecture (Option B: static site, rebuilt on a schedule)
+## Architecture static site, rebuilt on a schedule)
 
 ```
 GitHub Actions (every 3h)
@@ -14,58 +14,6 @@ GitHub Actions (every 3h)
                     └─ visitors' browsers just read static files
 ```
 
-## Day-one setup
-
-1. **Create a GitHub account** at github.com (free), if you don't have one.
-
-2. **Get a football-data.org API key**: register at
-   https://www.football-data.org/client/register — the key arrives by email
-   immediately. Free tier, no credit card.
-
-3. **Create a new repository** on GitHub (public, e.g. `worldcup-2026`),
-   then upload this project's files. Easiest without Git experience:
-   repo page → "uploading an existing file" → drag the whole folder in.
-   (Learning Git on the command line is worth it soon, but don't let it
-   block day one.)
-
-4. **Add your API key as a secret**: repo → Settings → Secrets and variables
-   → Actions → "New repository secret". Name: `FOOTBALL_DATA_API_KEY`,
-   value: your key. This is why the key never appears in the code.
-
-5. **Enable GitHub Pages**: repo → Settings → Pages → under "Build and
-   deployment", set Source to **GitHub Actions**.
-
-6. **Run it**: repo → Actions tab → "Build and deploy World Cup site" →
-   "Run workflow". Watch it go green, then open
-   `https://<your-username>.github.io/<repo-name>/`.
-
-From then on it rebuilds itself every 3 hours.
-
-## Running locally
-
-```bash
-# fetch real data (replace with your key):
-FOOTBALL_DATA_API_KEY=your_key python scripts/build_data.py
-
-# serve the site (browsers block file:// fetches, so use a tiny server):
-cd site
-python -m http.server
-# then open http://localhost:8000
-```
-
-Without an API key the site still works — it shows the bundled sample data
-and a notice, so you can develop the frontend independently of the API.
-(Engineers call this decoupling; it's why the sample file exists.)
-
-## Roadmap (phase 2)
-
-- Match detail view: squads, players' clubs, market values
-- Data source: transfermarkt-datasets DuckDB file → `site/data/players.json`
-- Host city / stadium enrichment
-
-## Phase 2: squads & market values (how it works)
-
-Two data rhythms, two workflows:
 
 - **Weekly** (`update_values.yml`): queries the transfermarkt-datasets
   players table remotely with DuckDB SQL and commits `site/data/values.json`.
@@ -78,52 +26,4 @@ Two data rhythms, two workflows:
 
 Clicking any match on the site opens the squad panel: players sorted by
 market value, their clubs, and each team's total squad value. Unmatched
-players show "—" — honest gaps beat wrong data.
-
-## Local development setup
-
-One-time:
-
-```bash
-# 1. install the local dependencies (just python-dotenv, plus duckdb for values)
-pip install -r requirements.txt
-
-# 2. create your .env from the template and add your key
-cp .env.example .env
-#    then edit .env and paste your football-data.org key
-```
-
-Then run any script — it loads .env automatically, no export needed:
-
-```bash
-python scripts/probe_events.py     # test: does the API return goal data?
-python scripts/build_data.py       # fetch matches + squads + join values
-```
-
-Preview the site locally:
-
-```bash
-cd site && python -m http.server   # then open http://localhost:8000
-```
-
-Note: `.env` is gitignored and never leaves your machine. In GitHub Actions,
-the key comes from repository secrets instead, and python-dotenv simply does
-nothing (there's no .env there) — the same scripts work in both places.
-
-## Pitch view & the lineup data story
-
-The match detail shows a **pitch view**: each team's most valuable squad players
-arranged by position line (GK / defence / midfield / attack), with market values
-and clubs. It's labelled "not a confirmed lineup" because it uses squad data, not
-the actual starting XI.
-
-Why not real starting XIs? We checked every free source:
-- football-data.org free tier: no lineup data (paid add-on only)
-- API-Football free tier: has lineups + grid positions, but current season is locked
-- TheSportsDB free tier: has 2026 matches but incomplete lineups (fragments)
-- transfermarkt-datasets: has 2026 fixtures but game_lineups table not yet populated
-
-**Upgrade paths** (if you want real starting XIs later):
-1. API-Football Pro (~$19/mo) — real lineups with grid coordinates for 2026.
-2. Watch transfermarkt-datasets — if its game_lineups table fills in for WC2026
-   (it may in a future weekly refresh), we can build a real-XI pitch view for free.
+players show "—".
